@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+
+
+{% block title %}
+{{ title }}
+{% endblock %}
+
+{% block styles %}
+<style>
+        *{
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body{
+            font-family: "Mona Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            min-height: 100vh;
+        }
+    </style>
+{% endblock %}
+    
+
+
+{% block content %}
+ {% include 'portal.html' %}
+{% endblock %}
+
+
+
+{% block scripts %}
+{% endblock %}

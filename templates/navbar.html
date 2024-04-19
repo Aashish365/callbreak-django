@@ -1,0 +1,499 @@
+{% load static %}
+
+
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
+  integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A=="
+  crossorigin="anonymous" referrerpolicy="no-referrer" />
+<style>
+  .navbar {
+    display: flex;
+    width: 100%;
+    height: 80px;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #ccc;
+    ;
+  }
+
+  .logo {
+    width: 70px;
+    height: 70px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    ;
+  }
+
+  .nav-links {
+    display: flex;
+    align-items: center;
+    position: relative;
+  }
+
+  .nav-button {
+    text-decoration: none;
+    color: rgb(36, 36, 36);
+    margin: 0 10px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100px;
+    height: 50px;
+    cursor: pointer;
+    transition: all .2s;
+    border: 1.5px solid transparent;
+    border-radius: 5px;
+  }
+
+  .nav-button:hover {
+    color: rgb(65, 65, 65);
+  }
+
+  .home-btn {}
+
+  .fa-home {
+    font-size: 20px;
+    padding: 5px;
+  }
+
+  .login-btn {
+    border: 1.5px solid rgb(36, 36, 36);
+  }
+
+
+  .register-btn {
+    background-color: rgb(36, 36, 36);
+
+    color: white;
+  }
+
+  .register-btn:hover {
+    color: white;
+    background-color: rgb(65, 65, 65);
+  }
+
+  .nav-button:active {
+    transform: translateY(2px);
+  }
+
+  .logout-btn {
+    background-color: white;
+    border: 1.5px solid red;
+  }
+
+  .logout-btn:hover {
+    background-color: rgb(255, 0, 0);
+    border: 1.5px solid transparent;
+    color: white;
+  }
+
+  .userProfileBtn {
+    text-decoration: none;
+    color: rgb(36, 36, 36);
+    margin: 0 10px;
+    font-weight: 600;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all .2s;
+    border: 1.5px solid transparent;
+    border-radius: 5px;
+    position: relative;
+  }
+
+  @keyframes userProfileBtnHover {
+    0% {
+      transform: scale(1);
+      opacity: 0;
+    }
+
+    25% {
+      transform: scale(1.3);
+      opacity: 0.75;
+    }
+
+    50% {
+      transform: scale(1.3);
+      opacity: 0.5;
+    }
+
+    100% {
+      transform: scale(1);
+      opacity: 0;
+    }
+  }
+
+  .userProfileBtn:hover::after {
+    content: "";
+    position: absolute;
+    top: 0%;
+    left: 0%;
+    right: 0%;
+    bottom: 0%;
+    background-color: rgb(39, 232, 139);
+    z-index: -1;
+    border-radius: 50% 50%;
+    transition: all .2s;
+    animation-name: userProfileBtnHover;
+    animation-duration: 0.5s;
+    animation-fill-mode: both;
+    overflow: hidden;
+    animation-delay: .2s;
+    animation-iteration-count: infinite;
+  }
+
+
+
+  .user-image-top,
+  .user-image-default-top {
+    padding: 2px;
+    width: 50px;
+    height: 50px;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: contain;
+    border-radius: 50% 50%;
+    border: 3px solid rgb(39, 232, 139);
+  }
+
+  .notification-btn {
+    width: 45px;
+    font-size: 30px;
+    color: rgb(36, 36, 36);
+    position: relative;
+  }
+
+  .notification-btn.unread::after {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: absolute;
+    font-size: 8px;
+    top: 3px;
+    right: 2px;
+    border-radius: 50% 50%;
+    width: 15px;
+    height: 15px;
+    background-color: red;
+    border: 2px solid white;
+    color: white;
+    content: attr(data-content);
+  }
+
+  #unread-invitations-container {
+    padding: 5px 5px;
+    display: none;
+    position: absolute;
+    top: 100%;
+    bottom: 0;
+    left: 0;
+    width: 87%;
+    height: 200px;
+    background-color: #e1e0db;
+    margin-top: 13px;
+    z-index: 1;
+    box-shadow: 10px 10px 20px 0px rgb(0 0 0 / 22%);
+    border-radius: 5px 5px;
+    overflow-y: scroll;
+    overflow-x: hidden;
+  }
+
+  .invitation {
+    display: flex;
+    width: 100%;
+    flex-direction: column;
+    padding: 5px 5px;
+    margin: 5px 0px;
+    border-bottom: 2px dashed #d1d1d1;
+  }
+
+  .invitation_content {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .invitationContentBegin {
+    display: flex;
+  }
+
+  .sender_name {
+    font-weight: bold;
+  }
+
+  .gameName_invited {
+    font-weight: bold;
+  }
+
+  .btnandtime {
+    display: flex;
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .invitation-btn-holder {
+    display: flex;
+    justify-content: center;
+  }
+
+  .invitation_accept_btn {
+    background-color: rgb(36, 36, 36);
+    padding: 5px 5px;
+    border-radius: 2px 2px;
+    margin: 5px 5px;
+    color: white;
+    transition: all .2s;
+  }
+
+  .invitation_decline_btn {
+    background-color: red;
+    padding: 5px 5px;
+    border-radius: 2px 2px;
+    margin: 5px 5px;
+    color: white;
+    transition: all .2s;
+  }
+
+  .invitation_accept_btn:hover {
+    cursor: pointer;
+    background-color: rgb(138, 138, 138);
+  }
+
+  .invitation_decline_btn:hover {
+    cursor: pointer;
+    background-color: rgb(245, 91, 91);
+  }
+
+  .invitation_decline_btn:active,
+  .invitation_accept_btn:active {
+    transform: translateY(2px);
+  }
+
+  .Time {
+    display: flex;
+    align-self: flex-end;
+    font-weight: bold;
+    color: rgb(160 160 160);
+    font-size: 12px;
+  }
+</style>
+
+<div class="navbar">
+  <span class="logo">
+    <img src="{% static 'images/logo.svg' %}" alt="My image" height="70px" width="70px" />
+  </span>
+
+  <div class="nav-links">
+    {% if user.is_authenticated %}
+    <a class="userProfileBtn" href="/profile">
+      {% if user_profile.profile_picture %}
+      <div class="user-image-top" style="background-image: url('{{ user_profile.profile_picture.url }}');"></div>
+      {% else %}
+      <div class="user-image-default-top"
+        style="background-image: url('/media/profile_pics/defaultProfilePicture.png');"></div>
+      {% endif %}
+    </a>
+    <div class="nav-button notification-btn" id="notification-btn"><i class="fa-solid fa-bell"></i></div>
+    <a class="nav-button home-btn" href="/">Home<i class="fa fa-home" aria-hidden="true"></i></a>
+    <a class="nav-button logout-btn" href="/logout">Logout</a>
+    <div class="unread-invitations-container" id="unread-invitations-container"></div>
+    {%else %}
+    <a class="nav-button home-btn" href="/">Home<i class="fa fa-home" aria-hidden="true"></i></a>
+    <a class="nav-button login-btn" href="/login">Login</a>
+    <a class="nav-button register-btn" href="/register">Register</a>
+    {%endif %}
+  </div>
+</div>
+
+
+<script>
+  $(document).ready(function () {
+    // Function to update the unread invitation count and notification button content
+    function updateUnreadInvitationsCount() {
+      var url = '/games/callbreak/get_unread_invitations_count';
+
+      $.ajax({
+        type: 'POST',
+        url: url,
+        data: {
+          csrfmiddlewaretoken: '{{ csrf_token }}' // Include CSRF token
+        },
+        success: function (data) {
+          // Handle success response if needed
+          console.log('Unread invitations count:', data.unread_count);
+
+          // Update notification button content with the unread invitations count
+          var notificationBtn = $('#notification-btn');
+
+          if (data.unread_count > 0) {
+            notificationBtn.attr('data-content', data.unread_count).addClass('unread');
+          } else {
+            notificationBtn.attr('data-content', '').removeClass('unread');
+          }
+        },
+        error: function (xhr, status, error) {
+          // Handle error response if needed
+          console.error('Error fetching unread invitations count:', error);
+        }
+      });
+    }
+
+    // Initial call to update the count when the page loads
+    updateUnreadInvitationsCount();
+
+    // Periodically update the count every 10 seconds (adjust interval as needed)
+    setInterval(function () {
+      updateUnreadInvitationsCount();
+    }, 10000); // Interval in milliseconds (e.g., 10 seconds)
+  });
+
+
+
+  function CalculateTimeAgo(date) {
+    // Get the current timestamp
+    const now = new Date().getTime();
+
+    // Calculate the difference in milliseconds
+    const delta = now - date.getTime();
+
+    // Convert the difference to seconds
+    const seconds = Math.floor(delta / 1000);
+
+    // Define thresholds for different units
+    const minuteInSecs = 60;
+    const hourInSecs = minuteInSecs * 60;
+    const dayInSecs = hourInSecs * 24;
+    const monthInSecs = dayInSecs * 30;
+    const yearInSecs = dayInSecs * 365;
+
+    // Determine the appropriate unit
+    if (seconds < minuteInSecs) {
+      // Less than a minute ago
+      return "just now";
+    } else if (seconds < hourInSecs) {
+      // Between a minute and an hour ago
+      return `${Math.floor(seconds / minuteInSecs)}m`;
+    } else if (seconds < dayInSecs) {
+      // Between an hour and a day ago
+      return `${Math.floor(seconds / hourInSecs)}h`;
+    } else if (seconds < monthInSecs) {
+      // Between a day and a month ago
+      return `${Math.floor(seconds / dayInSecs)}d`;
+    } else if (seconds < yearInSecs) {
+      // Between a month and a year ago
+      return `${Math.floor(seconds / monthInSecs)}mo`;
+    } else {
+      // More than a year ago
+      return `${Math.floor(seconds / yearInSecs)}y`;
+    }
+  }
+
+
+
+
+  $(document).ready(function () {
+    // Event handler for buttonA click
+    $('#notification-btn').on('click', function () {
+      event.stopPropagation();
+      var url = '/games/callbreak/get_unread_invitations';
+      $("#unread-invitations-container").toggle();
+      $.ajax({
+        type: 'POST',
+        url: url,
+        data: {
+          csrfmiddlewaretoken: '{{ csrf_token }}' // Include CSRF token if needed
+        },
+        success: function (data) {
+          // Handle success response
+          console.log('Unread invitations:', data.unread_invitations);
+
+          // Display unread invitations data on the front end
+          var unreadInvitationsContainer = $('#unread-invitations-container');
+          unreadInvitationsContainer.empty(); // Clear previous data
+
+          // Loop through each unread invitation and append it to the container
+          element = "";
+
+          if (data.unread_invitations.length != 0) {
+            $.each(data.unread_invitations, function (index, invitation) {
+              game = invitation.game_name;
+              sender = invitation.sender;
+              room = invitation.room_number;
+              var timestamp = CalculateTimeAgo(new Date(invitation.timestamp));
+              element += `<div class="invitation" data-room="${room}" ><div class="invitation_content"><div class="invitationContentBegin"><span class="sender_name">${sender}&nbsp</span> invited you to <span class="gameName_invited">&nbsp${game}</span></div></div><div class="btnandtime"><div class="invitation-btn-holder"><div class="invitation_accept_btn">Accept</div><div class="invitation_decline_btn">Decline</div></div><div class="Time">${timestamp}</div></div></div>`;
+            });
+          } else {
+            element = "<div class='invitation'><div class='invitation_content'><div class='invitationContentBegin'><span class='sender_name'>No Invitations.</span></div></div></div>";
+          }
+          unreadInvitationsContainer.append(element);
+        },
+        error: function (xhr, status, error) {
+          // Handle error response if needed
+          console.error('Error fetching unread invitations:', error);
+        }
+      });
+    });
+
+    $(document).click(function (event) {
+      if (!$(event.target).closest('#unread-invitations-container').length && !$(event.target).is('#notification-btn')) {
+        $("#unread-invitations-container").hide();
+      }
+    });
+
+
+  });
+
+
+
+
+
+
+  // these functions handles the join or decline request.
+  $(document).on('click', '.invitation_accept_btn', function () {
+    event.preventDefault();
+    room_number = $(this).closest('.invitation').data('room');
+    $.ajax({
+      url: '/games/callbreak/join-room/' + room_number,
+      type: 'POST',
+      headers: {
+        'X-CSRFToken': '{{ csrf_token }}'
+      },
+      success: function (data) {
+        var roomNumber = data.room_number;
+        var roomURL = '/games/callbreak/callbreak-joinee-room/' + roomNumber;
+        // Redirect to the room URL
+        window.location.href = roomURL;
+      },
+      error: function (xhr, textStatus, errorThrown) {
+        var errorResponse = xhr.responseJSON; // Parse JSON response
+        alert(errorResponse.error);
+      }
+    });
+  });
+
+  $(document).on('click', '.invitation_decline_btn', function () {
+    event.preventDefault();
+    room_number = $(this).closest('.invitation').data('room');
+    $.ajax({
+      url: '/games/callbreak/decline-room/' + room_number,
+      type: 'POST',
+      headers: {
+        'X-CSRFToken': '{{ csrf_token }}'
+      },
+      success: function (data) {
+        var roomNumber = data.room_number;
+        var roomURL = '/';
+        window.location.href = roomURL;
+      },
+      error: function (xhr, textStatus, errorThrown) {
+        var errorResponse = xhr.responseJSON; // Parse JSON response
+        alert(errorResponse.error);
+      }
+    });
+  });
+
+</script>

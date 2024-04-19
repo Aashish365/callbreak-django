@@ -1,0 +1,305 @@
+{% extends 'base.html' %} {% block title %} {{ user_profile.user.username }}
+Profile {% endblock %} {% block styles %}
+<style>
+      /* Reset styles */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    /* Body styles */
+    body {
+      font-family: "Open Sans", sans-serif; /* Change font family if desired */
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-between;
+      background-color: #f5f5f5;
+    }
+
+    /* Profile container styles */
+    .profile-container {
+        width: 100%;
+        display: flex;
+        justify-content: center;
+        padding: 20px;
+    }
+    .profile-container-wrapper{
+        width: 70%;
+        background-color: rgb(251, 251, 251);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 20px 40px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+        border-radius: 5px;
+
+        position: relative;
+    }
+
+    /* Profile image container styles */
+    .profile-image-container {
+      width: 200px;
+      height: 200px;
+      border-radius: 50%;
+      overflow: hidden;
+      background-color: #ddd; /* Set a default background color */
+      margin-bottom: 20px;
+    }
+
+    /* Profile image styles */
+    .profile-image {
+        height: 100%;
+        width: 100%;
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+    }
+
+    .profile-image-default{
+         height: 100%;
+        width: 100%;
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+    }
+
+    /* User information section styles */
+    .user-info {
+      display: flex;
+      flex-direction: column;
+      width: 100%;
+    }
+
+    .user-info h2 {
+      margin-bottom: 10px;
+      font-size: 20px;
+      text-transform: capitalize;
+    }
+
+    .user-info p {
+      margin-bottom: 5px;
+      line-height: 1.5;
+    }
+
+    /* Bio section styles */
+    .bio {
+      margin-bottom: 15px;
+      border-bottom: 1px solid #343434;
+      /* padding-bottom: 10px; */
+    }
+
+    .bio strong {
+      font-weight: bold;
+    }
+    .bio textarea {
+    width: 100%;   /* Make it fill the available width */
+    border: 1px solid #ccc; /* Border for the textarea */
+    padding: 0.5rem; /* Add some padding within the textarea */
+    font-family: inherit; /* Inherit font family from parent */
+    font-size: 1rem;   /* Set the font size */
+    resize: vertical; /* Allow vertical resizing */
+    background-color: #f8f8f8; /* Optional background color */
+    border-radius: 3px; /* Add rounded corners */
+  }
+
+    /* Other user information sections (optional) */
+    .info-section {
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+    }
+
+    .info-section i {
+      margin-right: 10px;
+      font-size: 18px;
+      color: #343434;
+    }
+
+    /* Social media links styles (optional) */
+    .social-links {
+      display: flex;
+      flex-wrap: wrap;
+      margin-top: 10px;
+    }
+
+    .social-links a {
+      margin: 5px;
+      padding: 5px 10px;
+      border: 1px solid #ddd;
+      border-radius: 3px;
+      text-decoration: none;
+      color: #333;
+    }
+
+    .social-links a:hover {
+      background-color: #ddd;
+    }
+
+    /* Optional styles for specific icons (e.g., Font Awesome) */
+    .fa-user {
+      color: #ddd;
+    }
+
+    /* Form styles */
+    form {
+      width: 100%;
+    }
+
+    .form-group {
+      margin-bottom: 15px;
+    }
+
+    label {
+      font-weight: bold;
+      margin-bottom: 5px;
+      display: block;
+    }
+
+    input[type="text"],
+    input[type="file"] {
+      width: 100%;
+      padding: 8px;
+      border: 1px solid #ccc;
+      border-radius: 3px;
+      box-sizing: border-box;
+      margin-top: 5px;
+    }
+
+    button[type="submit"] {
+      background-color: #007bff;
+      color: #fff;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 3px;
+      cursor: pointer;
+    }
+
+    button[type="submit"]:hover {
+      background-color: #0056b3;
+    }
+
+  
+
+  
+
+
+</style>
+{% endblock %} {% block content %}
+<div class="profile-container">
+  <div class="profile-container-wrapper">
+    <div class="profile-image-container">
+      {% if user_profile.profile_picture %}
+      <div
+        class="profile-image"
+        style="background-image: url('{{ user_profile.profile_picture.url }}');"
+      ></div>
+      {% else %}
+      <div
+        class="profile-image-default"
+        style="background-image: url('/media/profile_pics/defaultProfilePicture.png');"
+      ></div>
+      {% endif %}
+    </div>
+
+    <div class="user-info">
+      <h2>{{ user_profile.full_name }}</h2>
+      <form
+        method="post"
+        enctype="multipart/form-data"
+        action="{% url 'update_profile' %}"
+      >
+        {% csrf_token %}
+        <div class="bio">
+          <strong>Bio:</strong>
+          <textarea name="bio" id="bio" rows="3">
+{{ user_profile.bio }}</textarea
+          >
+        </div>
+
+        <div class="form-group">
+          <label for="profile_picture">Profile Picture:</label>
+          <input type="file" name="profile_picture" id="profile_picture" />
+        </div>
+        <div class="form-group">
+          <label for="full_name">Full Name:</label>
+          <input
+            type="text"
+            name="full_name"
+            id="full_name"
+            value="{{ user_profile.full_name }}"
+          />
+        </div>
+        <div class="form-group">
+          <label for="location">Location:</label>
+          <input
+            type="text"
+            name="location"
+            id="location"
+            value="{{ user_profile.location }}"
+          />
+        </div>
+        <div class="form-group">
+          <label for="interests">Interests:</label>
+          <input
+            type="text"
+            name="interests"
+            id="interests"
+            value="{{ user_profile.interests }}"
+          />
+        </div>
+        <div class="form-group">
+          <label for="social_media_links">Social Media Links:</label>
+          <input
+            type="text"
+            name="social_media_links"
+            id="social_media_links"
+            value="{{ user_profile.social_media_links }}"
+          />
+        </div>
+        <div class="form-group">
+          <label for="preferred_language">Preferred Language:</label>
+          <input
+            type="text"
+            name="preferred_language"
+            id="preferred_language"
+            value="{{ user_profile.preferred_language }}"
+          />
+        </div>
+        <div class="form-group">
+          <label for="date_of_birth">Date of Birth:</label>
+          <input
+            type="date"
+            name="date_of_birth"
+            id="date_of_birth"
+            value="{% if user_profile.date_of_birth %}{{ user_profile.date_of_birth|date:'Y-m-d' }}{% endif %}"
+          />
+          <span class="ShowDate">{{ user_profile.date_of_birth }}</span>
+        </div>
+        <div class="form-group">
+          <label for="occupation">Occupation:</label>
+          <input
+            type="text"
+            name="occupation"
+            id="occupation"
+            value="{{ user_profile.occupation }}"
+          />
+        </div>
+        <div class="form-group">
+          <label for="education">Education:</label>
+          <input
+            type="text"
+            name="education"
+            id="education"
+            value="{{ user_profile.education }}"
+          />
+        </div>
+        <button type="submit">Update Profile</button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

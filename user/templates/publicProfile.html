@@ -1,0 +1,205 @@
+{% extends 'base.html' %}
+
+{% block title %}
+{{ user_profile.user.username }} Profile
+{% endblock %}
+
+{% block styles %}
+<style>
+  /* Reset styles */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+/* Body styles */
+body {
+  font-family: "Open Sans", sans-serif; /* Change font family if desired */
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  background-color: #f5f5f5;
+}
+
+/* Profile container styles */
+.profile-container {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    padding: 20px;
+}
+.profile-container-wrapper{
+    width: 70%;
+    background-color: rgb(251, 251, 251);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 20px 40px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+    border-radius: 5px;
+}
+
+/* Profile image container styles */
+.profile-image-container {
+  width: 200px;
+  height: 200px;
+  border-radius: 50%;
+  overflow: hidden;
+  background-color: #ddd; /* Set a default background color */
+  margin-bottom: 20px;
+}
+
+
+
+/* Profile image styles */
+.profile-image {
+    height: 100%;
+    width: 100%;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+.profile-image-default{
+     height: 100%;
+    width: 100%;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+/* User information section styles */
+.user-info {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+.user-info h2 {
+  margin-bottom: 10px;
+  font-size: 20px;
+  text-transform: capitalize;
+}
+
+.user-info p {
+  margin-bottom: 5px;
+  line-height: 1.5;
+}
+
+/* Bio section styles */
+.bio {
+  margin-bottom: 15px;
+  border-bottom: 1px solid #343434;
+  padding-bottom: 10px;
+}
+
+.bio strong {
+  font-weight: bold;
+}
+
+/* Other user information sections (optional) */
+.info-section {
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+}
+
+.info-section i {
+  margin-right: 10px;
+  font-size: 18px;
+  color: #343434;
+}
+
+/* Social media links styles (optional) */
+.social-links {
+  display: flex;
+  flex-wrap: wrap;
+  margin-top: 10px;
+}
+
+.social-links a {
+  margin: 5px;
+  padding: 5px 10px;
+  border: 1px solid #ddd;
+  border-radius: 3px;
+  text-decoration: none;
+  color: #333;
+}
+
+.social-links a:hover {
+  background-color: #ddd;
+}
+
+/* Optional styles for specific icons (e.g., Font Awesome) */
+.fa-user {
+  color: #ddd;
+}
+
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="profile-container">
+    <div class="profile-container-wrapper">
+
+        <div class="profile-image-container">
+    {% if user_profile.profile_picture %}
+      <div class="profile-image" style="background-image: url('{{ user_profile.profile_picture.url }}');"></div>
+    {% else %}
+      <div class="profile-image-default" style="background-image: url('/media/profile_pics/defaultProfilePicture.png');"></div>
+    {% endif %}
+  </div>
+  <div class="user-info">
+    <h2>{{ user_profile.full_name }}</h2>
+    <div class="bio">
+      <strong>Bio:</strong>
+      {% if user_profile.bio %}
+        {{ user_profile.bio }}
+      {% else %}
+        <p>This user hasn't added a bio yet.</p>
+      {% endif %}
+    </div>
+    {% if user_profile.location %}
+      <div class="info-section">
+        <i class="fas fa-map-marker-alt"></i> <p>{{ user_profile.location }}</p>
+      </div>
+    {% endif %}
+    {% if user_profile.interests %}
+      <div class="info-section">
+        <i class="fas fa-star"></i> <p>{{ user_profile.interests }}</p>
+      </div>
+    {% endif %}
+    {% if user_profile.social_media_links %}
+      <div class="info-section">
+        <i class="fas fa-link"></i> <p><a href="{{ user_profile.social_media_links }}">{{ user_profile.social_media_links }}</a></p>
+      </div>
+    {% endif %}
+    {% if user_profile.preferred_language %}
+      <div class="info-section">
+        <i class="fas fa-globe"></i> <p><strong>Preferred Language:</strong> {{ user_profile.preferred_language }}</p>
+      </div>
+    {% endif %}
+    {% if user_profile.date_of_birth %}
+      <div class="info-section">
+        <i class="fas fa-birthday-cake"></i> <p><strong>Date of Birth:</strong> {{ user_profile.date_of_birth }}</p>
+      </div>
+    {% endif %}
+    {% if user_profile.occupation %}
+      <div class="info-section">
+        <i class="fas fa-briefcase"></i> <p><strong>Occupation:</strong> {{ user_profile.occupation }}</p>
+      </div>
+    {% endif %}
+    {% if user_profile.education %}
+      <div class="info-section">
+        <i class="fas fa-graduation-cap"></i> <p><strong>Education:</strong> {{ user_profile.education }}</p>
+      </div>
+    {% endif %}
+  </div>
+
+    </div>
+</div>
+{% endblock %}
