@@ -31,6 +31,7 @@ ALLOWED_HOSTS = []
 # Application definition
 
 INSTALLED_APPS = [
+    "daphne",
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -40,6 +41,7 @@ INSTALLED_APPS = [
     'user',
     'games',
     'callbreak',
+    'channels',
 ]
 
 MIDDLEWARE = [
@@ -71,6 +73,7 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'digital_arena.wsgi.application'
+ASGI_APPLICATION = 'digital_arena.asgi.application'
 
 
 # Database
@@ -137,3 +140,18 @@ BASE_DIR = os.path.dirname(os.path.dirname(__file__))
 
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')  # Path to the media folder
 MEDIA_URL = '/media/'  # URL prefix for accessing media files
+
+
+
+
+
+
+
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels_redis.core.RedisChannelLayer',
+        'CONFIG': {
+            'hosts': [('localhost', 6379)],
+        },
+    },
+}

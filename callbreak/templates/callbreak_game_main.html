@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %} {{ title }} {% endblock %}
+
+{% block styles %}
+<style>
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+
+    body {
+        font-family: "Mona Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        min-height: 100vh;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div>Here starts the callbreak Game:</div>
+{% endblock %}
+
+
+{% block scripts %}
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+{% endblock %}

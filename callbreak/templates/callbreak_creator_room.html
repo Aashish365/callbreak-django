@@ -34,7 +34,6 @@
         /* box-shadow: 0 0 8px 0 rgba(0, 0, 0, 0.2); */
         transition: 0.3s;
         display: flex;
-        flex-wrap: wrap;
         flex-direction: column;
         align-items: center;
         justify-content: center;
@@ -86,7 +85,7 @@
         cursor: pointer;
     }
 
-    .gameCard_play-btn>a {
+    .gameCard_play-btn>div {
         color: white;
         font-weight: bold;
         font-size: 20px;
@@ -96,7 +95,7 @@
         border-radius: 5px 5px;
     }
 
-    .gameCard_play-btn:hover>a {
+    .gameCard_play-btn:hover>div {
         background-color: rgb(65, 65, 65);
     }
 
@@ -377,11 +376,138 @@
         align-items: center;
         margin: 10px 0;
     }
+
+    #joined-players ul {
+        list-style: none;
+        display: flex;
+        flex-direction: column;
+        width: 100%;
+    }
+
+    #joined-players>ul>li {
+        border-bottom: 2px solid gainsboro;
+        padding: 5px;
+    }
+
+    #playing_cards-container {
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-end;
+        align-items: center;
+        height: 98vh;
+        overflow: hidden;
+
+    }
+
+    #playing_cards-container_wrapper {
+
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        width: 100%;
+        flex-wrap: wrap;
+    }
+
+    .card {
+        width: 150px;
+        transition: transform 0.3s ease-in-out;
+        height: auto;
+        /* margin-left: -60px; */
+    }
+
+    .card:not(:first-child) {
+        margin-left: -100px;
+    }
+
+    .card:hover {
+        transform: translateY(-8px);
+        z-index: 2;
+        cursor: pointer;
+    }
+
+
+    #customAlert {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+
+    #custom-alert-content {
+        width: 400px;
+        height: 250px;
+        background-color: white;
+        border-radius: 10px 10px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+    }
+
+    #custom-alert-content h2 {
+        margin-bottom: 20px;
+        font-family: sans-serif;
+        font-weight: bold;
+    }
+
+    #numberInput {
+        margin: 10px 10px;
+        padding: 10px;
+    }
+
+    #bid_submit_btn {
+        padding: 10px;
+    }
+
+    #player1 {
+        transform: rotateZ(270deg);
+        width: 200px;
+        position: absolute;
+        right: 0;
+        top: 50%
+    }
+
+    #player2 {
+        width: 200px;
+        position: absolute;
+        top: 100px;
+        left: 50%;
+    }
+
+    #player3 {
+        transform: rotateZ(90deg);
+        position: absolute;
+        width: 200px;
+        top: 50%;
+        left: 0;
+    }
+
+    #playersContainer_gamePlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        z-index: -1;
+    }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="callbreakHome">
+<div id="callbreak-game-main">
+
+    <div class="playing_cards-container" id="playing_cards-container">
+        <div class="cardContainer" id="playing_cards-container_wrapper">
+        </div>
+    </div>
+</div>
+<div class="callbreakHome" id="callbreak-home">
     <div class="gameCard">
         <div class="gameCard_imageOverlay" style="background-image: url('{% static game.image_url %}')"></div>
         <div class="gameCard-content">
@@ -389,13 +515,14 @@
             <p class="gameDescription">{{ game.description }}</p>
         </div>
         <div class="gameCard_play-btn">
-            <a href="/games/callbreak/" class="btn btn-primary btn-block">Start Game</a>
+            <div class="btn btn-primary btn-block" id="run-game-btn">Run Game</div>
         </div>
     </div>
 
     <div class="playerSection">
         <div class="section">
             <h2>Invitation Link</h2>
+            <div id="user_name_holder" style="display: none;">{{ user_name }}</div>
             <div class="invitation-link">
                 <input type="text" id="invitation-link-input" value="{{room_number}}" readonly>
                 <div id="copy-room-btn" class="copy-room-btn">Copy Room</div>
@@ -415,13 +542,8 @@
 
         <div class="section">
             <h2>Joined Players</h2>
-            <div class="joined-players">
-                <ul>
-                    <li>Player 1</li>
-                    <li>Player 2</li>
-                    <li>Player 3</li>
+            <div id="joined-players">
 
-                </ul>
             </div>
         </div>
     </div>
@@ -434,86 +556,16 @@
 
 
 
-
 <script>
-    // $(document).ready(function () {
-    //     var minChars = 2; // Minimum characters to trigger search
-    //     var lastSearchQuery = ""; // Stores the last complete search query
-    //     var timeoutId = null;
-
-    //     $('#searchInput').on('keyup', function () { // Handle keyup events
-    //         var query = $(this).val().trim();
-
-    //         // Clear results if query is less than minimum characters
-    //         if (query.length < minChars) {
-    //             clearTimeout(timeoutId);
-    //             $('#searchResults').html('');
-    //             return;
-    //         }
-
-    //         // Cancel pending search requests
-    //         clearTimeout(timeoutId);
-
-    //         // Delay search for smoother user experience (optional)
-    //         timeoutId = setTimeout(function () {
-    //             if (query !== lastSearchQuery) {
-    //                 lastSearchQuery = query;
-
-    //                 // Send AJAX request
-    //                 $.ajax({
-    //                     type: 'GET',
-    //                     url: '/search_users/',
-    //                     data: {
-    //                         search_query: query
-    //                     },
-    //                     success: function (data) {
-    //                         var users = data.users;
-    //                         var resultHTML = '';
-
-    //                         if (users.length > 0) {
-    //                             resultHTML = '<ul>';
-    //                             $.each(users, function (index, user) {
-    //                                 resultHTML += '<li>';
-    //                                 resultHTML += '<div class="player">';
-    //                                 if (user.username == "No matching result") {
-    //                                     resultHTML += '<div class="notFound">' + user.username + '</div>'
-    //                                 } else {
-    //                                     if (user.profile_picture == "") {
-    //                                         resultHTML += '<img src="{% static "/images/defaultProfilePicture.png"  %}" alt="Profile Picture">';
-    //                                     } else {
-    //                                         resultHTML += '<img src="' + user.profile_picture + '" alt="Profile Picture">';
-    //                                     }
-    //                                     resultHTML += "<a class='sendInvitationButton'><i class='fa-solid fa-user-plus'></i> Invite</a>"
-    //                                     resultHTML += '<div class="player-info">';
-    //                                     resultHTML += '<p>' + user.username + '</p>';
-    //                                     resultHTML += '<div class="status-ribbon">';
-    //                                     if (user.is_online) {
-    //                                         resultHTML += '<span class="online"></span>';
-    //                                     } else {
-    //                                         resultHTML += '<span class="offline"></span>';
-    //                                     }
-    //                                     resultHTML += '</div>'; // Close status-ribbon
-    //                                     resultHTML += '</div>'; // Close player-info
-    //                                 }
-    //                                 resultHTML += '</div>'; // Close player
-    //                                 resultHTML += '</li>';
-    //                             });
-    //                             resultHTML += '</ul>';
-    //                         } else {
-    //                             resultHTML = '<p>No results found.</p>';
-    //                         }
-
-    //                         $('#searchResults').html(resultHTML);
-    //                     }
-    //                 });
-    //             }
-    //         }, 250); // Adjust delay as needed (e.g., 300ms)
-    //     });
-    // });
-
+    distributedCards = []
+    channel_name = ""
+    bidding_count = 0;
+    players_info = []
 
 
     $(document).ready(function () {
+        $("#callbreak-game-main").hide();
+        $("#callbreak-home").show();
         var minChars = 2; // Minimum characters to trigger search
         var lastSearchQuery = ""; // Stores the last complete search query
         var timeoutId = null;
@@ -625,6 +677,275 @@
             document.execCommand('copy');
         });
     });
+
+
+
+
+
+    $(document).ready(function () {
+        var room_number = $('#invitation-link-input').val();
+        var user_name = $('#user_name_holder').text();
+        if (!room_number) {
+            console.error('Room number not found');
+            return;
+        }
+
+        // Construct WebSocket URL
+        var url = `ws://localhost:8000/ws/join-room/${encodeURIComponent(room_number)}/${encodeURIComponent(user_name)}/`;
+
+        // Create WebSocket connection
+        var socket = new WebSocket(url);
+
+        // Connection opened
+        socket.addEventListener('open', function (event) {
+            console.log('WebSocket connection established.');
+        });
+
+        // Message received
+        socket.addEventListener('message', function (event) {
+            // Parse the received JSON data
+            var data = JSON.parse(event.data);
+            // console.log(event);
+
+            // Handle different types of messages
+            if (data.connected_users || data.players_update) {
+                // Handle player data updates
+                var updatedUsers = data.connected_users || data.players_update;
+                players_info = updatedUsers;
+
+                updatePlayerList(updatedUsers);
+                if (onlinePlayerCount(updatedUsers) == 4) {
+                    $('#run-game-btn').show();
+                } else {
+                    $('#run-game-btn').hide();
+                }
+            } else if (data.redirect && data.redirect == 'initiateGame') {
+                // Show game UI and hide home UI
+                $("#callbreak-game-main").show();
+                $("#callbreak-home").hide();
+
+                // Request card distribution
+                requestForCardsAction();
+                showPlayerInGame(players_info)
+                askForBidding();
+            } else if (data.distributed_cards_to_client) {
+                // Handle distributed cards
+                distributedCards = data.distributed_cards_to_client;
+                // showCards(distributedCards);
+                displayCards(sortHandBySuit(distributedCards), window.innerWidth);
+                // Process the received cards as needed
+            } else if (data.channel_name) {
+                channel_name = data.channel_name
+                console.log(channel_name)
+            }
+        });
+
+        // Function to update player list
+        function updatePlayerList(users) {
+            var resultHTML = '';
+            if (users.length > 0) {
+                resultHTML = '<ul>';
+                users.forEach(function (user) {
+                    resultHTML += '<li>';
+                    resultHTML += '<div class="player">';
+
+                    var profilePicture = user.profile_image ? user.profile_image : "{% static '/images/defaultProfilePicture.png' %}";
+
+
+                    resultHTML += '<img src="' + profilePicture + '" alt="Profile Picture">';
+                    resultHTML += '<div class="player-info">';
+                    resultHTML += '<p>' + user.username + '</p>';
+                    resultHTML += '<div class="status-ribbon">';
+                    if (user.is_online) {
+                        resultHTML += '<span class="online"></span>';
+                    } else {
+                        resultHTML += '<span class="offline"></span>';
+                    }
+                    resultHTML += '</div>'; // Close status-ribbon
+                    resultHTML += '</div>'; // Close player-info
+                    resultHTML += '</div>'; // Close player
+                    resultHTML += '</li>';
+                });
+                resultHTML += '</ul>';
+            } else {
+                resultHTML = '<p>No results found.</p>';
+            }
+
+            $("#joined-players").html(resultHTML);
+        }
+
+        // Connection closed
+        socket.addEventListener('close', function (event) {
+            console.log('WebSocket connection closed.');
+        });
+
+        // Connection error
+        socket.addEventListener('error', function (error) {
+            console.error('WebSocket error:', error);
+        });
+
+        // Example: Send a message
+        function sendMessage(message) {
+            socket.send(JSON.stringify(message));
+        }
+
+        // Function to count online players
+        function onlinePlayerCount(users) {
+            return users.filter(function (user) {
+                return user.is_online;
+            }).length;
+        }
+
+        // Function to send change page action
+        function sendChangePageAction() {
+            sendMessage({ action: 'change_page' });
+        }
+
+        // Click event for the "Run Game" button
+        $('#run-game-btn').click(function (event) {
+            event.preventDefault();
+            sendChangePageAction();
+        });
+
+        // Function to request distributed cards
+        function requestForCardsAction() {
+            sendMessage({ action: 'distribute_cards' });
+        }
+
+
+
+
+        function displayCards(hand, containerWidth) {
+            const container = document.getElementById("playing_cards-container_wrapper");
+            container.innerHTML = "";
+            container.style.width = `${containerWidth}px`;
+
+            hand.forEach((card, index) => {
+                const img = document.createElement("img");
+                var imageName = card.rank + '_of_' + card.suit + '.png';
+                var imgSrc = '/static/cards/' + encodeURIComponent(imageName);
+                img.src = imgSrc
+                img.alt = `${card.rank} of ${card.suit}`;
+                img.classList.add("card");
+
+                // Store the index of the card as a data attribute
+                img.dataset.index = index; // Use dataset.index for data-index attribute
+
+                // Add event listener to handle click on the card
+                img.addEventListener("click", () => handleClick(event, hand));
+
+                container.appendChild(img);
+            });
+        }
+
+        function handleClick(event, hand) {
+            const cardIndex = event.currentTarget.dataset.index;
+
+            // Thorw this card hand[cardIndex]
+
+            hand.splice(cardIndex, 1);
+            displayCards(sortHandBySuit(hand), window.innerWidth);
+        }
+        // Function to add click and drag functionality to an image element
+
+        function sortHandBySuit(hand) {
+            const cardsBySuit = {};
+            // Separate cards by suit
+            hand.forEach((card) => {
+                if (!cardsBySuit[card.suit]) {
+                    cardsBySuit[card.suit] = [];
+                }
+                cardsBySuit[card.suit].push(card);
+            });
+            // Sort cards within each suit
+            for (const suit in cardsBySuit) {
+                cardsBySuit[suit].sort((a, b) => a.value - b.value);
+            }
+            // Combine sorted cards suit-wise
+            const sortedHand = [];
+            for (const suit in cardsBySuit) {
+                sortedHand.push(...cardsBySuit[suit]);
+            }
+
+            return sortedHand;
+        }
+
+    });
+
+
+
+
+
+    function askForBidding() {
+        // Create custom alert box
+        var customAlert = document.createElement("div");
+        customAlert.id = "customAlert";
+        customAlert.innerHTML = `
+        <div id="custom-alert-content">
+            <h2>Enter Your Bid (Hint: 1 to 13) </h2>
+            <input type="number" id="numberInput" min="1" max="13">
+            <button id="bid_submit_btn" onclick="closeCustomAlert()">Submit</button>
+        </div>
+    `;
+        // Append custom alert box to body
+        document.body.appendChild(customAlert);
+    }
+
+    function closeCustomAlert() {
+        var number = document.getElementById("numberInput").value;
+        if (number !== "") {
+            console.log("You entered: " + number);
+            if (!(number > 13 || number <= 0)) {
+                var customAlert = document.getElementById("customAlert");
+                customAlert.parentNode.removeChild(customAlert);
+                bidding_count = number;
+            } else {
+                alert("Please enter a valid number between 1 and 13");
+            }
+
+        }
+    }
+
+
+    function showPlayerInGame(players_info) {
+        i = 1;
+        players_info = giveCycle(players_info, channel_name);
+        playercontainer = document.createElement('div');
+        playercontainer.id = "playersContainer_gamePlay"
+        resultHTML = "";
+        players_info.forEach(user => {
+            resultHTML += `<div class="player" id="player${i}">`;
+
+            var profilePicture = user.profile_image ? user.profile_image : "{% static '/images/defaultProfilePicture.png' %}";
+
+
+            resultHTML += '<img src="' + profilePicture + '" alt="Profile Picture">';
+            resultHTML += '<div class="player-info">';
+            resultHTML += '<p>' + user.username + '</p>';
+            resultHTML += '<div class="status-ribbon">';
+            resultHTML += '</div>'; // Close status-ribbon
+            resultHTML += '</div>'; // Close player-info
+            resultHTML += '</div>'; // Close player
+            i++;
+        })
+        playercontainer.innerHTML = resultHTML;
+        document.getElementById('callbreak-game-main').append(playercontainer);
+
+    }
+
+
+    function giveCycle(players_info, channel_name) {
+        let index = 0;
+        for (var i = 0; i < players_info.length; i++) {
+            if (players_info[i].channel_name == channel_name) {
+                index = i;
+                break;
+            }
+        }
+        players_info = players_info.slice(index).concat(players_info.slice(0, index));
+        players_info.shift();
+        return players_info
+    }
 
 
 

@@ -449,10 +449,10 @@
                 },
                 success: function (data) {
                     var roomNumber = data.room_number;
-
                     var roomURL = '/games/callbreak/callbreak-creator-room/' + roomNumber;
 
                     window.location.href = roomURL;
+
                 },
                 error: function (xhr, textStatus, errorThrown) {
                     console.error('Error creating room:', errorThrown);
@@ -483,8 +483,18 @@
                     window.location.href = roomURL;
                 },
                 error: function (xhr, textStatus, errorThrown) {
-                    var errorResponse = xhr.responseJSON; // Parse JSON response
-                    alert(errorResponse.error);
+                    var errorResponse = xhr.responseJSON; // Parse JSON 
+                    if (errorResponse.already_joined && errorResponse.isCreator) {
+                        var roomURL = '/games/callbreak/callbreak-creator-room/' + errorResponse.room_number;
+                        // Redirect to the room URL
+                        window.location.href = roomURL;
+                    } else if (errorResponse.already_joined && !errorResponse.isCreator) {
+                        var roomURL = '/games/callbreak/callbreak-joinee-room/' + errorResponse.room_number;
+                        // Redirect to the room URL
+                        window.location.href = roomURL;
+                    } else {
+                        alert(errorResponse.error)
+                    }
                 }
             });
         });

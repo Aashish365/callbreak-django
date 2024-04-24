@@ -1,5 +1,5 @@
 from django.contrib.auth import authenticate, login,logout
-from django.shortcuts import render, redirect,reverse
+from django.shortcuts import render, redirect,reverse,get_object_or_404
 from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required
 from user.models import Profile
@@ -8,6 +8,11 @@ from games.models import Game
 from user.models import Player
 from django.http import JsonResponse
 import uuid
+
+from django.shortcuts import HttpResponse
+from django.http import JsonResponse
+from channels.layers import get_channel_layer
+from asgiref.sync import async_to_sync
 
 
 
@@ -20,8 +25,9 @@ def callbreak_home(request):
             'image_url': 'images/callbreak.png',
             'id':"callbreak"
         }
+    user_name=request.user.username
     user_profile, created = Profile.objects.get_or_create(user=request.user)
-    return render(request, 'callbreak_home.html',{ 'title':"Call Break",'game':gameInfo,'user_profile': user_profile})
+    return render(request, 'callbreak_home.html',{ 'title':"Call Break",'game':gameInfo,'user_profile': user_profile,'user_name':user_name})
 
 
 
@@ -33,8 +39,9 @@ def callbreak_creator_room(request, room_number):
         'image_url': 'images/callbreak.png',
         'id': "callbreak"
     }
+    user_name=request.user.username
     user_profile, created = Profile.objects.get_or_create(user=request.user)
-    return render(request, 'callbreak_creator_room.html', { 'title': "Call Break Room", 'game': gameInfo, 'user_profile': user_profile, 'room_number': room_number })    
+    return render(request, 'callbreak_creator_room.html', { 'title': "Call Break Room", 'game': gameInfo, 'user_profile': user_profile, 'room_number': room_number, 'user_name':user_name })    
 
 @login_required(login_url='login')
 def callbreak_joinee_room(request, room_number):
@@ -44,13 +51,21 @@ def callbreak_joinee_room(request, room_number):
         'image_url': 'images/callbreak.png',
         'id': "callbreak"
     }
+    user_name=request.user.username
     user_profile, created = Profile.objects.get_or_create(user=request.user)
-    return render(request, 'callbreak_joinee_room.html', { 'title': "Call Break Room", 'game': gameInfo, 'user_profile': user_profile, 'room_number': room_number })    
+    return render(request, 'callbreak_joinee_room.html', { 'title': "Call Break Room", 'game': gameInfo, 'user_profile': user_profile, 'room_number': room_number,'user_name' :user_name })    
 
+
+@login_required(login_url='login')
+def callbreak_main_game(request,room_number):
+    user_name=request.user.username
+    user_profile, created = Profile.objects.get_or_create(user=request.user)
+    return render(request, 'callbreak_game_main.html', { 'title': "Call Break", 'user_profile': user_profile, 'room_number': room_number, 'user_name':user_name })
 
     
 @login_required(login_url='login')
 def create_room(request):
+    print("Room Created")
     if request.method == 'POST':
         if request.user.is_authenticated:
             # Retrieve the Player instance corresponding to the logged-in user
@@ -89,18 +104,24 @@ def create_room(request):
 
 
        
-
 @login_required(login_url='login')
 def join_room(request, room_number):
+    print("Room Created")
     if request.method == 'POST':
         # Assuming the user is logged in
         if request.user.is_authenticated:
             # Retrieve the Player instance corresponding to the logged-in user
             player = request.user.player
-            
+            room = get_object_or_404(Room, room_number=room_number)
             # if player already joined the room
             if RoomPlayer.objects.filter(room__room_number=room_number,player=player).exists():
-                return JsonResponse({'error': 'Player has already joined the room.'}, status=400)
+                response_data = {
+                        'already_joined':True,
+                        'room_number': room_number,
+                        'isCreator':room.creator == player,
+                    }
+                return JsonResponse(response_data,status=400)
+            
             else:
                 try:
                     # Get the room
@@ -138,6 +159,8 @@ def join_room(request, room_number):
             return JsonResponse({'error': 'User is not authenticated.'}, status=401)
     else:
         return JsonResponse({'error': 'Only POST requests are allowed.'}, status=400)
+
+
     
 
 

@@ -22,11 +22,21 @@ class Room(models.Model):
 
 
 
+# class RoomPlayer(models.Model):
+#     id = models.AutoField(primary_key=True)
+#     room = models.ForeignKey(Room, on_delete=models.CASCADE)
+#     player = models.ForeignKey(Player, on_delete=models.CASCADE)
+#     score = models.IntegerField(default=0)
+
+#     def __str__(self):
+#         return f"{self.player} in {self.room}"
+    
 class RoomPlayer(models.Model):
     id = models.AutoField(primary_key=True)
     room = models.ForeignKey(Room, on_delete=models.CASCADE)
     player = models.ForeignKey(Player, on_delete=models.CASCADE)
     score = models.IntegerField(default=0)
+    channel_name = models.CharField(max_length=255, blank=True, null=True)
 
     def __str__(self):
         return f"{self.player} in {self.room}"

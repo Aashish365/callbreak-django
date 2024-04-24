@@ -64,14 +64,8 @@ def Logout(request):
     player = request.user.player
     player.is_online = False
     player.save()
-
-    if 'user_email' in request.session:
-        del request.session['user_email']
-    if 'user_full_name' in request.session:
-        del request.session['user_full_name']
     logout(request)
     return redirect('login')
-
 
 
 
@@ -103,9 +97,6 @@ def update_profile(request):
 
 
 
-
-
-    
 @login_required(login_url='login')
 def search_users(request):
     if request.headers.get('x-requested-with') == 'XMLHttpRequest':

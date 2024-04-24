@@ -397,57 +397,60 @@
 
   $(document).ready(function () {
     // Event handler for buttonA click
+    isButtonOff = true;
     $('#notification-btn').on('click', function () {
-      event.stopPropagation();
-      var url = '/games/callbreak/get_unread_invitations';
-      $("#unread-invitations-container").toggle();
-      $.ajax({
-        type: 'POST',
-        url: url,
-        data: {
-          csrfmiddlewaretoken: '{{ csrf_token }}' // Include CSRF token if needed
-        },
-        success: function (data) {
-          // Handle success response
-          console.log('Unread invitations:', data.unread_invitations);
+      if(isButtonOff){
+        event.stopPropagation();
+        var url = '/games/callbreak/get_unread_invitations';
+        $("#unread-invitations-container").toggle();
+        $.ajax({
+          type: 'POST',
+          url: url,
+          data: {
+            csrfmiddlewaretoken: '{{ csrf_token }}' // Include CSRF token if needed
+          },
+          success: function (data) {
+            // Handle success response
+            console.log('Unread invitations:', data.unread_invitations);
 
-          // Display unread invitations data on the front end
-          var unreadInvitationsContainer = $('#unread-invitations-container');
-          unreadInvitationsContainer.empty(); // Clear previous data
+            // Display unread invitations data on the front end
+            var unreadInvitationsContainer = $('#unread-invitations-container');
+            unreadInvitationsContainer.empty(); // Clear previous data
 
-          // Loop through each unread invitation and append it to the container
-          element = "";
+            // Loop through each unread invitation and append it to the container
+            element = "";
 
-          if (data.unread_invitations.length != 0) {
-            $.each(data.unread_invitations, function (index, invitation) {
-              game = invitation.game_name;
-              sender = invitation.sender;
-              room = invitation.room_number;
-              var timestamp = CalculateTimeAgo(new Date(invitation.timestamp));
-              element += `<div class="invitation" data-room="${room}" ><div class="invitation_content"><div class="invitationContentBegin"><span class="sender_name">${sender}&nbsp</span> invited you to <span class="gameName_invited">&nbsp${game}</span></div></div><div class="btnandtime"><div class="invitation-btn-holder"><div class="invitation_accept_btn">Accept</div><div class="invitation_decline_btn">Decline</div></div><div class="Time">${timestamp}</div></div></div>`;
-            });
-          } else {
-            element = "<div class='invitation'><div class='invitation_content'><div class='invitationContentBegin'><span class='sender_name'>No Invitations.</span></div></div></div>";
+            if (data.unread_invitations.length != 0) {
+              $.each(data.unread_invitations, function (index, invitation) {
+                game = invitation.game_name;
+                sender = invitation.sender;
+                room = invitation.room_number;
+                var timestamp = CalculateTimeAgo(new Date(invitation.timestamp));
+                element += `<div class="invitation" data-room="${room}" ><div class="invitation_content"><div class="invitationContentBegin"><span class="sender_name">${sender}&nbsp</span> invited you to <span class="gameName_invited">&nbsp${game}</span></div></div><div class="btnandtime"><div class="invitation-btn-holder"><div class="invitation_accept_btn">Accept</div><div class="invitation_decline_btn">Decline</div></div><div class="Time">${timestamp}</div></div></div>`;
+              });
+            } else {
+              element = "<div class='invitation'><div class='invitation_content'><div class='invitationContentBegin'><span class='sender_name'>No Invitations.</span></div></div></div>";
+            }
+            unreadInvitationsContainer.append(element);
+          },
+          error: function (xhr, status, error) {
+            // Handle error response if needed
+            console.error('Error fetching unread invitations:', error);
           }
-          unreadInvitationsContainer.append(element);
-        },
-        error: function (xhr, status, error) {
-          // Handle error response if needed
-          console.error('Error fetching unread invitations:', error);
-        }
-      });
+        });
+        isButtonOff=false;
+      }
     });
 
     $(document).click(function (event) {
       if (!$(event.target).closest('#unread-invitations-container').length && !$(event.target).is('#notification-btn')) {
         $("#unread-invitations-container").hide();
+        isButtonOff=true;
       }
     });
 
 
   });
-
-
 
 
 

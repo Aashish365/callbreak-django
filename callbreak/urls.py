@@ -11,5 +11,6 @@ urlpatterns = [
     path('send-invitation/<str:room_number>/<str:receiver_name>', views.send_invitation, name='send_invitation'),
     path("get_unread_invitations_count",views.get_unread_invitations_count,name="get_unread_invitations_count"),
     path("get_unread_invitations",views.get_unread_invitations,name="get_unread_invitations"),
+    path('callbrea-main-game/<str:room_number>/', views.callbreak_main_game, name='callbreak_main_game')
 
 ]
