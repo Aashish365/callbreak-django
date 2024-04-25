@@ -397,6 +397,7 @@
         align-items: center;
         height: 98vh;
         overflow: hidden;
+        position: relative;
 
     }
 
@@ -467,23 +468,23 @@
 
     #player1 {
         transform: rotateZ(270deg);
-        width: 200px;
+        width: 250px;
         position: absolute;
         right: 0;
         top: 50%
     }
 
     #player2 {
-        width: 200px;
+        width: 250px;
         position: absolute;
         top: 100px;
         left: 50%;
     }
 
     #player3 {
-        transform: rotateZ(90deg);
+        transform: rotateZ(270deg);
         position: absolute;
-        width: 200px;
+        width: 250px;
         top: 50%;
         left: 0;
     }
@@ -495,6 +496,118 @@
         right: 0;
         bottom: 0;
         z-index: -1;
+    }
+
+    @keyframes selfThrow {
+        0% {
+            bottom: -20%;
+            left: 50%;
+        }
+
+        100% {
+            bottom: 27%;
+            left: 50%;
+        }
+    }
+
+
+
+    @keyframes player2_throw {
+        0% {
+            top: -20%;
+            left: 50%;
+        }
+
+        100% {
+            top: 27%;
+            left: 50%;
+        }
+    }
+
+    @keyframes player1_throw {
+        0% {
+            right: -20%;
+            top: 50%;
+        }
+
+        100% {
+            right: 27%;
+            top: 40%;
+        }
+    }
+
+    @keyframes player3_throw {
+        0% {
+            left: -20%;
+            top: 50%;
+        }
+
+        100% {
+            left: 35%;
+            top: 40%;
+        }
+    }
+
+
+    .thrownCard_player4 {
+        width: 100px;
+        position: absolute;
+        transition: all .3s;
+        animation-name: selfThrow;
+        animation-duration: .3s;
+        animation-fill-mode: forwards;
+    }
+
+    .thrownCard_player1 {
+        width: 100px;
+        position: absolute;
+        transition: all .3s;
+        animation-name: player1_throw;
+        animation-duration: .3s;
+        animation-fill-mode: forwards;
+        transform: rotateZ(90deg);
+    }
+
+    .thrownCard_player2 {
+        width: 100px;
+        position: absolute;
+        transition: all .3s;
+        animation-name: player2_throw;
+        animation-duration: .3s;
+        animation-fill-mode: forwards;
+    }
+
+    .thrownCard_player3 {
+        width: 100px;
+        position: absolute;
+        transition: all .3s;
+        animation-name: player3_throw;
+        animation-duration: .3s;
+        animation-fill-mode: forwards;
+        transform: rotateZ(90deg);
+    }
+
+    .bid_container_0 {
+        position: absolute;
+        bottom: 50px;
+        left: 50px;
+
+        padding: 10px 10px;
+        border-radius: 5px 5px;
+        font-weight: bold;
+        font-size: 20px;
+        color: rgb(67, 67, 67);
+        background-color: greenyellow;
+    }
+
+    .bid_container {
+        padding: 10px 10px;
+        border-radius: 5px 5px;
+        font-weight: bold;
+        font-size: 20px;
+        color: rgb(67, 67, 67);
+        background-color: greenyellow;
+        margin-left: 10px;
     }
 </style>
 {% endblock %}
@@ -561,7 +674,8 @@
     channel_name = ""
     bidding_count = 0;
     players_info = []
-
+    players_order_list = []
+    thrownCards = []
 
     $(document).ready(function () {
         $("#callbreak-game-main").hide();
@@ -679,217 +793,291 @@
     });
 
 
+    var room_number = $('#invitation-link-input').val();
+    var user_name = $('#user_name_holder').text();
+    if (!room_number) {
+        console.error('Room number not found');
+    }
 
+    // Construct WebSocket URL
+    var url = `ws://localhost:8000/ws/join-room/${encodeURIComponent(room_number)}/${encodeURIComponent(user_name)}/`;
 
+    // Create WebSocket connection
+    var socket = new WebSocket(url);
 
-    $(document).ready(function () {
-        var room_number = $('#invitation-link-input').val();
-        var user_name = $('#user_name_holder').text();
-        if (!room_number) {
-            console.error('Room number not found');
-            return;
-        }
-
-        // Construct WebSocket URL
-        var url = `ws://localhost:8000/ws/join-room/${encodeURIComponent(room_number)}/${encodeURIComponent(user_name)}/`;
-
-        // Create WebSocket connection
-        var socket = new WebSocket(url);
-
-        // Connection opened
-        socket.addEventListener('open', function (event) {
-            console.log('WebSocket connection established.');
-        });
-
-        // Message received
-        socket.addEventListener('message', function (event) {
-            // Parse the received JSON data
-            var data = JSON.parse(event.data);
-            // console.log(event);
-
-            // Handle different types of messages
-            if (data.connected_users || data.players_update) {
-                // Handle player data updates
-                var updatedUsers = data.connected_users || data.players_update;
-                players_info = updatedUsers;
-
-                updatePlayerList(updatedUsers);
-                if (onlinePlayerCount(updatedUsers) == 4) {
-                    $('#run-game-btn').show();
-                } else {
-                    $('#run-game-btn').hide();
-                }
-            } else if (data.redirect && data.redirect == 'initiateGame') {
-                // Show game UI and hide home UI
-                $("#callbreak-game-main").show();
-                $("#callbreak-home").hide();
-
-                // Request card distribution
-                requestForCardsAction();
-                showPlayerInGame(players_info)
-                askForBidding();
-            } else if (data.distributed_cards_to_client) {
-                // Handle distributed cards
-                distributedCards = data.distributed_cards_to_client;
-                // showCards(distributedCards);
-                displayCards(sortHandBySuit(distributedCards), window.innerWidth);
-                // Process the received cards as needed
-            } else if (data.channel_name) {
-                channel_name = data.channel_name
-                console.log(channel_name)
-            }
-        });
-
-        // Function to update player list
-        function updatePlayerList(users) {
-            var resultHTML = '';
-            if (users.length > 0) {
-                resultHTML = '<ul>';
-                users.forEach(function (user) {
-                    resultHTML += '<li>';
-                    resultHTML += '<div class="player">';
-
-                    var profilePicture = user.profile_image ? user.profile_image : "{% static '/images/defaultProfilePicture.png' %}";
-
-
-                    resultHTML += '<img src="' + profilePicture + '" alt="Profile Picture">';
-                    resultHTML += '<div class="player-info">';
-                    resultHTML += '<p>' + user.username + '</p>';
-                    resultHTML += '<div class="status-ribbon">';
-                    if (user.is_online) {
-                        resultHTML += '<span class="online"></span>';
-                    } else {
-                        resultHTML += '<span class="offline"></span>';
-                    }
-                    resultHTML += '</div>'; // Close status-ribbon
-                    resultHTML += '</div>'; // Close player-info
-                    resultHTML += '</div>'; // Close player
-                    resultHTML += '</li>';
-                });
-                resultHTML += '</ul>';
-            } else {
-                resultHTML = '<p>No results found.</p>';
-            }
-
-            $("#joined-players").html(resultHTML);
-        }
-
-        // Connection closed
-        socket.addEventListener('close', function (event) {
-            console.log('WebSocket connection closed.');
-        });
-
-        // Connection error
-        socket.addEventListener('error', function (error) {
-            console.error('WebSocket error:', error);
-        });
-
-        // Example: Send a message
-        function sendMessage(message) {
-            socket.send(JSON.stringify(message));
-        }
-
-        // Function to count online players
-        function onlinePlayerCount(users) {
-            return users.filter(function (user) {
-                return user.is_online;
-            }).length;
-        }
-
-        // Function to send change page action
-        function sendChangePageAction() {
-            sendMessage({ action: 'change_page' });
-        }
-
-        // Click event for the "Run Game" button
-        $('#run-game-btn').click(function (event) {
-            event.preventDefault();
-            sendChangePageAction();
-        });
-
-        // Function to request distributed cards
-        function requestForCardsAction() {
-            sendMessage({ action: 'distribute_cards' });
-        }
-
-
-
-
-        function displayCards(hand, containerWidth) {
-            const container = document.getElementById("playing_cards-container_wrapper");
-            container.innerHTML = "";
-            container.style.width = `${containerWidth}px`;
-
-            hand.forEach((card, index) => {
-                const img = document.createElement("img");
-                var imageName = card.rank + '_of_' + card.suit + '.png';
-                var imgSrc = '/static/cards/' + encodeURIComponent(imageName);
-                img.src = imgSrc
-                img.alt = `${card.rank} of ${card.suit}`;
-                img.classList.add("card");
-
-                // Store the index of the card as a data attribute
-                img.dataset.index = index; // Use dataset.index for data-index attribute
-
-                // Add event listener to handle click on the card
-                img.addEventListener("click", () => handleClick(event, hand));
-
-                container.appendChild(img);
-            });
-        }
-
-        function handleClick(event, hand) {
-            const cardIndex = event.currentTarget.dataset.index;
-
-            // Thorw this card hand[cardIndex]
-
-            hand.splice(cardIndex, 1);
-            displayCards(sortHandBySuit(hand), window.innerWidth);
-        }
-        // Function to add click and drag functionality to an image element
-
-        function sortHandBySuit(hand) {
-            const cardsBySuit = {};
-            // Separate cards by suit
-            hand.forEach((card) => {
-                if (!cardsBySuit[card.suit]) {
-                    cardsBySuit[card.suit] = [];
-                }
-                cardsBySuit[card.suit].push(card);
-            });
-            // Sort cards within each suit
-            for (const suit in cardsBySuit) {
-                cardsBySuit[suit].sort((a, b) => a.value - b.value);
-            }
-            // Combine sorted cards suit-wise
-            const sortedHand = [];
-            for (const suit in cardsBySuit) {
-                sortedHand.push(...cardsBySuit[suit]);
-            }
-
-            return sortedHand;
-        }
-
+    // Connection opened
+    socket.addEventListener('open', function (event) {
+        console.log('WebSocket connection established.');
     });
 
+    // Message received
+    socket.addEventListener('message', function (event) {
+        // Parse the received JSON data
+        var data = JSON.parse(event.data);
+        // console.log(event);
+
+        // Handle different types of messages
+        if (data.connected_users || data.players_update) {
+            // Handle player data updates
+            var updatedUsers = data.connected_users || data.players_update;
+
+            updatePlayerList(updatedUsers);
+            if (onlinePlayerCount(updatedUsers) == 4) {
+                $('#run-game-btn').show();
+            } else {
+                $('#run-game-btn').hide();
+            }
+        } else if (data.redirect && data.redirect == 'initiateGame') {
+            // Show game UI and hide home UI
+            $("#callbreak-game-main").show();
+            $("#callbreak-home").hide();
+
+            // Request card distribution
+            requestForCardsAction();
+
+            askForBidding();
+        } else if (data.distributed_cards_to_client) {
+            // Handle distributed cards
+            distributedCards = data.distributed_cards_to_client;
+            players_info = data.players_info;
+            // showCards(distributedCards);
+            displayCards(sortHandBySuit(distributedCards), window.innerWidth);
+            showPlayerInGame(players_info)
+            // Process the received cards as needed
+        } else if (data.channel_name) {
+            channel_name = data.channel_name
+            console.log(channel_name)
+        } else if (data.action === 'card_thrown') {
+            var cardInfo = data.card;
+            thrownCards.push(cardInfo);
+            userInfo = data.user;
+            showThrownCard(userInfo, cardInfo);
+
+        } else if (data.action == 'bid_count') {
+            var bid_amount = data.bid_count;
+            var bidding_user = data.user_info;
+            showBidCount(bid_amount, bidding_user)
+        }
+    });
+
+    function showThrownCard(userInfo, card) {
+        const img = document.createElement("img");
+        var imageName = card.rank + '_of_' + card.suit + '.png';
+        var imgSrc = '/static/cards/' + encodeURIComponent(imageName);
+        img.src = imgSrc
+        img.alt = `${card.rank} of ${card.suit}`;
+        position = 4;
+        for (let index = 1; index < players_order_list.length; index++) {
+            if (players_order_list[index].channel_name == userInfo) {
+                position = index;
+                break;
+            }
+        }
+        console.log(position);
+        img.classList.add(`thrownCard_player${position}`);
+        document.body.appendChild(img);
+
+    }
+
+    function showBidCount(bid_amount, incoming_channel) {
+        for (let i = 0; i < players_order_list.length; i++) {
+            if (players_order_list[i].channel_name == incoming_channel) {
+                if (i == 0) {
+                    container = document.getElementById("playing_cards-container");
+                    bidContainer = document.createElement('div');
+                    bidContainer.classList.add('bid_container_0');
+                    bidContainer.innerHTML = "Bid: " + bid_amount;
+                    container.appendChild(bidContainer);
+                } else {
+                    bidContainer = document.getElementById(`player${i}_bid`);
+                    bidContainer.classList.add('bid_container')
+                    bidContainer.innerHTML = "Bid: " + bid_amount;
+                }
+                break;
+            }
+        }
 
 
+    }
+
+
+    // Function to update player list
+    function updatePlayerList(users) {
+        var resultHTML = '';
+        if (users.length > 0) {
+            resultHTML = '<ul>';
+            users.forEach(function (user) {
+                resultHTML += '<li>';
+                resultHTML += '<div class="player">';
+
+                var profilePicture = user.profile_image ? user.profile_image : "{% static '/images/defaultProfilePicture.png' %}";
+
+
+                resultHTML += '<img src="' + profilePicture + '" alt="Profile Picture">';
+                resultHTML += '<div class="player-info">';
+                resultHTML += '<p>' + user.username + '</p>';
+                resultHTML += '<div class="status-ribbon">';
+                if (user.is_online) {
+                    resultHTML += '<span class="online"></span>';
+                } else {
+                    resultHTML += '<span class="offline"></span>';
+                }
+                resultHTML += '</div>'; // Close status-ribbon
+                resultHTML += '</div>'; // Close player-info
+                resultHTML += '</div>'; // Close player
+                resultHTML += '</li>';
+            });
+            resultHTML += '</ul>';
+        } else {
+            resultHTML = '<p>No results found.</p>';
+        }
+
+        $("#joined-players").html(resultHTML);
+    }
+
+    // Connection closed
+    socket.addEventListener('close', function (event) {
+        console.log('WebSocket connection closed.');
+    });
+
+    // Connection error
+    socket.addEventListener('error', function (error) {
+        console.error('WebSocket error:', error);
+    });
+
+    // Example: Send a message
+    function sendMessage(message) {
+        socket.send(JSON.stringify(message));
+    }
+
+    // Function to count online players
+    function onlinePlayerCount(users) {
+        return users.filter(function (user) {
+            return user.is_online;
+        }).length;
+    }
+
+    // Function to send change page action
+    function sendChangePageAction() {
+        sendMessage({ action: 'change_page' });
+    }
+
+    // Click event for the "Run Game" button
+    $('#run-game-btn').click(function (event) {
+        event.preventDefault();
+        sendChangePageAction();
+    });
+
+    // Function to request distributed cards
+    function requestForCardsAction() {
+        sendMessage({ action: 'distribute_cards' });
+    }
+
+
+    function throwCard(cardinfo, userinfo) {
+        sendMessage({ action: "card_thrown", card: cardinfo })
+    }
+
+    function sendBidCountToServer(bid_count) {
+        sendMessage({
+            action: "bid_count",
+            bid_count: bid_count
+
+        })
+    }
+
+
+    function displayCards(hand, containerWidth) {
+        const container = document.getElementById("playing_cards-container_wrapper");
+        container.innerHTML = "";
+        container.style.width = `${containerWidth}px`;
+
+        hand.forEach((card, index) => {
+            const img = document.createElement("img");
+            var imageName = card.rank + '_of_' + card.suit + '.png';
+            var imgSrc = '/static/cards/' + encodeURIComponent(imageName);
+            img.src = imgSrc
+            img.alt = `${card.rank} of ${card.suit}`;
+            img.classList.add("card");
+
+            // Store the index of the card as a data attribute
+            img.dataset.index = index; // Use dataset.index for data-index attribute
+
+            // Add event listener to handle click on the card
+            img.addEventListener("click", () => handleClick(event, hand));
+
+            container.appendChild(img);
+        });
+    }
+
+    function handleClick(event, hand) {
+        const cardIndex = event.currentTarget.dataset.index;
+        throwCard(hand[cardIndex], channel_name)
+        // Thorw this card hand[cardIndex]
+
+        hand.splice(cardIndex, 1);
+        displayCards(sortHandBySuit(hand), window.innerWidth);
+    }
+    // Function to add click and drag functionality to an image element
+
+    function sortHandBySuit(hand) {
+        const cardsBySuit = {};
+        // Separate cards by suit
+        hand.forEach((card) => {
+            if (!cardsBySuit[card.suit]) {
+                cardsBySuit[card.suit] = [];
+            }
+            cardsBySuit[card.suit].push(card);
+        });
+        // Sort cards within each suit
+        for (const suit in cardsBySuit) {
+            cardsBySuit[suit].sort((a, b) => a.value - b.value);
+        }
+        // Combine sorted cards suit-wise
+        const sortedHand = [];
+        for (const suit in cardsBySuit) {
+            sortedHand.push(...cardsBySuit[suit]);
+        }
+
+        return sortedHand;
+    }
 
 
     function askForBidding() {
         // Create custom alert box
         var customAlert = document.createElement("div");
         customAlert.id = "customAlert";
-        customAlert.innerHTML = `
-        <div id="custom-alert-content">
+        customAlert.innerHTML = `<div id="custom-alert-content">
             <h2>Enter Your Bid (Hint: 1 to 13) </h2>
             <input type="number" id="numberInput" min="1" max="13">
-            <button id="bid_submit_btn" onclick="closeCustomAlert()">Submit</button>
-        </div>
-    `;
+            <button id="bid_submit_btn" onclick="closeCustomAlert()">Submit</button></div>`;
         // Append custom alert box to body
         document.body.appendChild(customAlert);
     }
+    function closeCustomAlert() {
+        var number = document.getElementById("numberInput").value;
+        if (number !== "") {
+            console.log("You entered: " + number);
+            if (!(number > 13 || number <= 0)) {
+                var customAlert = document.getElementById("customAlert");
+                customAlert.parentNode.removeChild(customAlert);
+                bidding_count = number;
+                sendBidCountToServer(number);
+            } else {
+                alert("Please enter a valid number between 1 and 13");
+            }
+
+        }
+    }
+
+
+
+
+
+
+
+
+
 
     function closeCustomAlert() {
         var number = document.getElementById("numberInput").value;
@@ -899,6 +1087,7 @@
                 var customAlert = document.getElementById("customAlert");
                 customAlert.parentNode.removeChild(customAlert);
                 bidding_count = number;
+                sendBidCountToServer(number);
             } else {
                 alert("Please enter a valid number between 1 and 13");
             }
@@ -907,13 +1096,17 @@
     }
 
 
-    function showPlayerInGame(players_info) {
-        i = 1;
-        players_info = giveCycle(players_info, channel_name);
+
+
+    function showPlayerInGame(players_) {
+        players_order_list = giveCycle(players_, channel_name);
+
         playercontainer = document.createElement('div');
         playercontainer.id = "playersContainer_gamePlay"
         resultHTML = "";
-        players_info.forEach(user => {
+
+        for (let i = 1; i < players_order_list.length; i++) {
+            user = players_order_list[i];
             resultHTML += `<div class="player" id="player${i}">`;
 
             var profilePicture = user.profile_image ? user.profile_image : "{% static '/images/defaultProfilePicture.png' %}";
@@ -922,12 +1115,13 @@
             resultHTML += '<img src="' + profilePicture + '" alt="Profile Picture">';
             resultHTML += '<div class="player-info">';
             resultHTML += '<p>' + user.username + '</p>';
-            resultHTML += '<div class="status-ribbon">';
+            resultHTML += `<div id="player${i}_bid" class="player_bid">`;
             resultHTML += '</div>'; // Close status-ribbon
             resultHTML += '</div>'; // Close player-info
             resultHTML += '</div>'; // Close player
-            i++;
-        })
+
+        }
+
         playercontainer.innerHTML = resultHTML;
         document.getElementById('callbreak-game-main').append(playercontainer);
 
@@ -936,14 +1130,13 @@
 
     function giveCycle(players_info, channel_name) {
         let index = 0;
-        for (var i = 0; i < players_info.length; i++) {
+        for (i = 0; i < players_info.length; i++) {
             if (players_info[i].channel_name == channel_name) {
                 index = i;
                 break;
             }
         }
         players_info = players_info.slice(index).concat(players_info.slice(0, index));
-        players_info.shift();
         return players_info
     }
 

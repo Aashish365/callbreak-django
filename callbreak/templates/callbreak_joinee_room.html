@@ -472,23 +472,23 @@
 
     #player1 {
         transform: rotateZ(270deg);
-        width: 200px;
+        width: 250px;
         position: absolute;
         right: 0;
         top: 50%
     }
 
     #player2 {
-        width: 200px;
+        width: 250px;
         position: absolute;
         top: 100px;
         left: 50%;
     }
 
     #player3 {
-        transform: rotateZ(90deg);
+        transform: rotateZ(270deg);
         position: absolute;
-        width: 200px;
+        width: 250px;
         top: 50%;
         left: 0;
     }
@@ -500,6 +500,118 @@
         right: 0;
         bottom: 0;
         z-index: -1;
+    }
+
+    @keyframes selfThrow {
+        0% {
+            bottom: -20%;
+            left: 50%;
+        }
+
+        100% {
+            bottom: 27%;
+            left: 50%;
+        }
+    }
+
+    @keyframes player2_throw {
+        0% {
+            top: -20%;
+            left: 50%;
+        }
+
+        100% {
+            top: 27%;
+            left: 50%;
+        }
+    }
+
+    @keyframes player1_throw {
+        0% {
+            right: -20%;
+            top: 50%;
+        }
+
+        100% {
+            right: 27%;
+            top: 40%;
+        }
+    }
+
+
+    @keyframes player3_throw {
+        0% {
+            left: -20%;
+            top: 50%;
+        }
+
+        100% {
+            left: 35%;
+            top: 40%;
+        }
+    }
+
+
+    .thrownCard_player4 {
+        width: 100px;
+        position: absolute;
+        transition: all .3s;
+        animation-name: selfThrow;
+        animation-duration: .3s;
+        animation-fill-mode: forwards;
+    }
+
+    .thrownCard_player1 {
+        width: 100px;
+        position: absolute;
+        transition: all .3s;
+        animation-name: player1_throw;
+        animation-duration: .3s;
+        animation-fill-mode: forwards;
+        transform: rotateZ(90deg);
+    }
+
+    .thrownCard_player2 {
+        width: 100px;
+        position: absolute;
+        transition: all .3s;
+        animation-name: player2_throw;
+        animation-duration: .3s;
+        animation-fill-mode: forwards;
+    }
+
+    .thrownCard_player3 {
+        width: 100px;
+        position: absolute;
+        transition: all .3s;
+        animation-name: player3_throw;
+        animation-duration: .3s;
+        animation-fill-mode: forwards;
+        transform: rotateZ(90deg);
+    }
+
+    .bid_container_0 {
+        position: absolute;
+        bottom: 50px;
+        left: 50px;
+
+        padding: 10px 10px;
+        border-radius: 5px 5px;
+        font-weight: bold;
+        font-size: 20px;
+        color: rgb(67, 67, 67);
+        background-color: greenyellow;
+
+    }
+
+    .bid_container {
+        padding: 10px 10px;
+        border-radius: 5px 5px;
+        font-weight: bold;
+        font-size: 20px;
+        color: rgb(67, 67, 67);
+        background-color: greenyellow;
+        margin-left: 10px;
     }
 </style>
 {% endblock %}
@@ -555,109 +667,122 @@
     channel_name = ""
     bidding_count = 0;
     players_info = [];
-    $(document).ready(function () {
-        $('#callbreak-home').show();
-        $('#callbreak-game-main').hide();
-
-        $('#run-game-btn').hide();
-        room_number = $('#room_number_holder').text();
-        user_name = $('#user_name_holder').text();
+    players_order_list = []
+    thrownCards = []
 
 
-        if (!room_number) {
-            console.error('Room number not found');
-            return;
-        }
 
-        // Construct WebSocket URL
-        const url = `ws://localhost:8000/ws/join-room/${encodeURIComponent(room_number)}/${encodeURIComponent(user_name)}/`;
+    $('#callbreak-home').show();
+    $('#callbreak-game-main').hide();
 
-        // Create WebSocket connection
-        const socket = new WebSocket(url);
+    $('#run-game-btn').hide();
+    room_number = $('#room_number_holder').text();
+    user_name = $('#user_name_holder').text();
 
-        // Connection opened
-        socket.addEventListener('open', function (event) {
-            console.log('WebSocket connection established.');
-        });
 
-        // Message received
-        // Message received
-        socket.addEventListener('message', function (event) {
-            var data = JSON.parse(event.data); // Parse the received JSON data
-            if (data.connected_users) {
-                connectedUsers = data.connected_users;
-                players_info = connectedUsers;
-                updatePlayerList(connectedUsers);
-            } else if (data.players_update) {
-                // Handle player data updates
-                var updatedUsers = data.players_update;
-                players_info = connectedUsers;
-                updatePlayerList(updatedUsers);
-            } else if (data.redirect) {
-                if (data.redirect == 'initiateGame') {
-                    $('#callbreak-home').hide();
-                    $('#callbreak-game-main').show();
-                    showPlayerInGame(players_info);
-                    askForBidding();
-                }
+    if (!room_number) {
+        console.error('Room number not found');
+    }
 
-            } else if (data.distributed_cards_to_client) {
-                // Handle distributed cards
-                distributedCards = data.distributed_cards_to_client;
-                displayCards(sortHandBySuit(distributedCards), window.innerWidth);
-                players_info = data.players_info;
-            } else if (data.channel_name) {
-                channel_name = data.channel_name;
-                console.log(channel_name);
-            }
-        });
+    // Construct WebSocket URL
+    const url = `ws://localhost:8000/ws/join-room/${encodeURIComponent(room_number)}/${encodeURIComponent(user_name)}/`;
 
-        // Function to update player list
-        function updatePlayerList(users) {
-            var resultHTML = '';
-            if (users.length > 0) {
-                resultHTML = '<ul>';
-                users.forEach(function (user) {
-                    resultHTML += '<li>';
-                    resultHTML += '<div class="player">';
-                    var profilePicture = user.profile_image ? user.profile_image : "{% static '/images/defaultProfilePicture.png' %}";
-                    resultHTML += '<img src="' + profilePicture + '" alt="Profile Picture">';
-                    resultHTML += '<div class="player-info">';
-                    resultHTML += '<p>' + user.username + '</p>';
-                    resultHTML += '<div class="status-ribbon">';
-                    if (user.is_online) {
-                        resultHTML += '<span class="online"></span>';
-                    } else {
-                        resultHTML += '<span class="offline"></span>';
-                    }
-                    resultHTML += '</div>'; // Close status-ribbon
-                    resultHTML += '</div>'; // Close player-info
-                    resultHTML += '</div>'; // Close player
-                    resultHTML += '</li>';
-                });
-                resultHTML += '</ul>';
-            } else {
-                resultHTML = '<p>No results found.</p>';
+    // Create WebSocket connection
+    const socket = new WebSocket(url);
+
+    // Connection opened
+    socket.addEventListener('open', function (event) {
+        console.log('WebSocket connection established.');
+    });
+
+    // Message received
+    // Message received
+    socket.addEventListener('message', function (event) {
+        var data = JSON.parse(event.data); // Parse the received JSON data
+        if (data.connected_users) {
+            connectedUsers = data.connected_users;
+
+            updatePlayerList(connectedUsers);
+        } else if (data.players_update) {
+            // Handle player data updates
+            var updatedUsers = data.players_update;
+
+            updatePlayerList(updatedUsers);
+        } else if (data.redirect) {
+            if (data.redirect == 'initiateGame') {
+                $('#callbreak-home').hide();
+                $('#callbreak-game-main').show();
+
+                askForBidding();
             }
 
-            $("#joined-players").html(resultHTML);
-        }
+        } else if (data.distributed_cards_to_client) {
+            // Handle distributed cards
+            distributedCards = data.distributed_cards_to_client;
+            displayCards(sortHandBySuit(distributedCards), window.innerWidth);
+            players_info = data.players_info;
+            showPlayerInGame(players_info);
+        } else if (data.channel_name) {
+            channel_name = data.channel_name;
+            console.log(channel_name);
+        } else if (data.action === 'card_thrown') {
+            var cardInfo = data.card;
+            thrownCards.push(cardInfo);
+            userInfo = data.user;
+            showThrownCard(userInfo, cardInfo);
 
-        // Connection closed
-        socket.addEventListener('close', function (event) {
-            console.log('WebSocket connection closed.');
-        });
-
-        // Connection error
-        socket.addEventListener('error', function (error) {
-            console.error('WebSocket error:', error);
-        });
-
-        // Example: Send a message
-        function sendMessage(message) {
-            socket.send(JSON.stringify(message));
+        } else if (data.action == 'bid_count') {
+            var bid_amount = data.bid_count;
+            var bidding_user = data.user_info;
+            showBidCount(bid_amount, bidding_user)
         }
     });
+
+
+
+    // Connection closed
+    socket.addEventListener('close', function (event) {
+        console.log('WebSocket connection closed.');
+    });
+
+    // Connection error
+    socket.addEventListener('error', function (error) {
+        console.error('WebSocket error:', error);
+    });
+
+
+    // Example: Send a message
+
+
+    function sendMessage(message) {
+        socket.send(JSON.stringify(message));
+    }
+
+    function throwCard(cardinfo, userinfo) {
+        sendMessage({ action: "card_thrown", card: cardinfo })
+    }
+
+    function showBidCount(bid_amount, incoming_channel) {
+        for (let i = 0; i < players_order_list.length; i++) {
+            if (players_order_list[i].channel_name == incoming_channel) {
+                if (i == 0) {
+                    container = document.getElementById("playing_cards-container");
+                    bidContainer = document.createElement('div');
+                    bidContainer.classList.add('bid_container_0');
+                    bidContainer.innerHTML = "Bid: " + bid_amount;
+                    container.appendChild(bidContainer);
+
+                } else {
+                    bidContainer = document.getElementById(`player${i}_bid`);
+                    bidContainer.classList.add('bid_container')
+                    bidContainer.innerHTML = "Bid: " + bid_amount;
+                }
+                break;
+            }
+        }
+
+
+    }
 
     function displayCards(hand, containerWidth) {
         const container = document.getElementById("playing_cards-container_wrapper");
@@ -684,7 +809,7 @@
 
     function handleClick(event, hand) {
         const cardIndex = event.currentTarget.dataset.index;
-
+        throwCard(hand[cardIndex], channel_name)
         // Thorw this card hand[cardIndex]
 
         hand.splice(cardIndex, 1);
@@ -715,19 +840,114 @@
     }
 
     function askForBidding() {
-        console.log(players_info);
         // Create custom alert box
         var customAlert = document.createElement("div");
         customAlert.id = "customAlert";
         customAlert.innerHTML = `
-        <div id="custom-alert-content">
-            <h2>Enter Your Bid (Hint: 1 to 13) </h2>
-            <input type="number" id="numberInput" min="1" max="13">
-            <button id="bid_submit_btn" onclick="closeCustomAlert()">Submit</button>
-        </div>
-    `;
+            <div id="custom-alert-content">
+                <h2>Enter Your Bid (Hint: 1 to 13) </h2>
+                <input type="number" id="numberInput" min="1" max="13">
+                <button id="bid_submit_btn" onclick="closeCustomAlert()">Submit</button>
+            </div>`;
         // Append custom alert box to body
         document.body.appendChild(customAlert);
+    }
+
+
+
+
+
+    function showPlayerInGame(players_) {
+        players_order_list = giveCycle(players_, channel_name);
+
+
+        playercontainer = document.createElement('div');
+        playercontainer.id = "playersContainer_gamePlay"
+        resultHTML = "";
+
+        for (let i = 1; i < players_order_list.length; i++) {
+            user = players_order_list[i];
+            resultHTML += `<div class="player" id="player${i}">`;
+
+            var profilePicture = user.profile_image ? user.profile_image : "{% static '/images/defaultProfilePicture.png' %}";
+
+
+            resultHTML += '<img src="' + profilePicture + '" alt="Profile Picture">';
+            resultHTML += '<div class="player-info">';
+            resultHTML += '<p>' + user.username + '</p>';
+            resultHTML += `<div id="player${i}_bid" class="player_bid">`;
+            resultHTML += '</div>'; // Close status-ribbon
+            resultHTML += '</div>'; // Close player-info
+            resultHTML += '</div>'; // Close player
+
+        }
+
+        playercontainer.innerHTML = resultHTML;
+        document.getElementById('callbreak-game-main').append(playercontainer);
+
+    }
+
+
+    function giveCycle(players_information, channel_name) {
+        let index = 0;
+        for (i = 0; i < players_information.length; i++) {
+            if (players_information[i].channel_name == channel_name) {
+                index = i;
+                break;
+            }
+        }
+        players_information = players_information.slice(index).concat(players_information.slice(0, index));
+        return players_information
+    }
+
+    function showThrownCard(userInfo, card) {
+        const img = document.createElement("img");
+        var imageName = card.rank + '_of_' + card.suit + '.png';
+        var imgSrc = '/static/cards/' + encodeURIComponent(imageName);
+        img.src = imgSrc
+        img.alt = `${card.rank} of ${card.suit}`;
+        position = 4;
+        for (let index = 1; index < players_order_list.length; index++) {
+            if (players_order_list[index].channel_name == userInfo) {
+                position = index;
+                break;
+            }
+        }
+
+        img.classList.add(`thrownCard_player${position}`);
+        document.body.appendChild(img);
+
+    }
+
+    // Function to update player list
+    function updatePlayerList(users) {
+        var resultHTML = '';
+        if (users.length > 0) {
+            resultHTML = '<ul>';
+            users.forEach(function (user) {
+                resultHTML += '<li>';
+                resultHTML += '<div class="player">';
+                var profilePicture = user.profile_image ? user.profile_image : "{% static '/images/defaultProfilePicture.png' %}";
+                resultHTML += '<img src="' + profilePicture + '" alt="Profile Picture">';
+                resultHTML += '<div class="player-info">';
+                resultHTML += '<p>' + user.username + '</p>';
+                resultHTML += '<div class="status-ribbon">';
+                if (user.is_online) {
+                    resultHTML += '<span class="online"></span>';
+                } else {
+                    resultHTML += '<span class="offline"></span>';
+                }
+                resultHTML += '</div>'; // Close status-ribbon
+                resultHTML += '</div>'; // Close player-info
+                resultHTML += '</div>'; // Close player
+                resultHTML += '</li>';
+            });
+            resultHTML += '</ul>';
+        } else {
+            resultHTML = '<p>No results found.</p>';
+        }
+
+        $("#joined-players").html(resultHTML);
     }
 
     function closeCustomAlert() {
@@ -738,52 +958,21 @@
                 var customAlert = document.getElementById("customAlert");
                 customAlert.parentNode.removeChild(customAlert);
                 bidding_count = number;
+                sendBidCountToServer(number);
             } else {
                 alert("Please enter a valid number between 1 and 13");
             }
 
         }
     }
+    function sendBidCountToServer(bid_count) {
+        sendMessage({
+            action: "bid_count",
+            bid_count: bid_count
 
-    function showPlayerInGame(players_info) {
-        i = 1;
-        players_info = giveCycle(players_info, channel_name);
-        playercontainer = document.createElement('div');
-        playercontainer.id = "playersContainer_gamePlay"
-        resultHTML = "";
-        players_info.forEach(user => {
-            resultHTML += `<div class="player" id="player${i}">`;
-
-            var profilePicture = user.profile_image ? user.profile_image : "{% static '/images/defaultProfilePicture.png' %}";
-
-
-            resultHTML += '<img src="' + profilePicture + '" alt="Profile Picture">';
-            resultHTML += '<div class="player-info">';
-            resultHTML += '<p>' + user.username + '</p>';
-            resultHTML += '<div class="status-ribbon">';
-            resultHTML += '</div>'; // Close status-ribbon
-            resultHTML += '</div>'; // Close player-info
-            resultHTML += '</div>'; // Close player
-            i++;
         })
-        playercontainer.innerHTML = resultHTML;
-        document.getElementById('callbreak-game-main').append(playercontainer);
-
     }
 
-
-    function giveCycle(players_info, channel_name) {
-        let index = 0;
-        for (var i = 0; i < players_info.length; i++) {
-            if (players_info[i].channel_name == channel_name) {
-                index = i;
-                break;
-            }
-        }
-        players_info = players_info.slice(index).concat(players_info.slice(0, index));
-        players_info.shift();
-        return players_info
-    }
 
 
 </script>

@@ -328,9 +328,49 @@ class CallbreakConsumer(AsyncWebsocketConsumer):
         elif action == 'distribute_cards':
             await self.distribute_cards(self.room_number)
             print("Distribute cards Request sent from client")
+        elif action=="card_thrown":
+            card_info = text_data_json['card']
+            await self.channel_layer.group_send(
+                 f'callbreak_rooms_{self.room_number}',
+                {
+                    'type': 'send_card_info',
+                    'card_info': card_info,
+                    'user_info': self.channel_name,
+                }
+            )
+        elif action=="bid_count":
+            bid_count=text_data_json['bid_count']
+            await self.channel_layer.group_send(
+                    f'callbreak_rooms_{self.room_number}',
+                    {
+                        'type': 'send_bid_count',
+                        'bid_count': bid_count,
+                        'user_info': self.channel_name,
+                    }
+            )
         else:
             # Handle other actions as needed
             pass
+
+    async def send_bid_count(self,event):
+        bid_count=event['bid_count']
+        user_info=event['user_info']
+        await self.send(text_data=json.dumps({
+            'action': 'bid_count',
+            'bid_count': bid_count,
+            'user_info': user_info,
+        }))
+    async def send_card_info(self,event):
+        # extract the information from event
+        card_info = event['card_info']
+        user_info = event['user_info']
+        # Send the card and user information to the WebSocket
+        await self.send(text_data=json.dumps({
+            'action': 'card_thrown',
+            'card': card_info,
+            'user': user_info,
+        }))
+
 
     async def change_page(self, event):
         # Redirect the user to another page
@@ -385,6 +425,8 @@ class CallbreakConsumer(AsyncWebsocketConsumer):
         print("Distributing cards")
         # get all the players in the room
         players_channels=await sync_to_async(self.get_channel_names_for_room)(self.room_number)
+        
+        player_data = await sync_to_async(self.get_players_in_room_data)(self.room_number)
 
         cards = shuffle_deck(generate_deck())  
         cards_per_player = 13
@@ -401,6 +443,7 @@ class CallbreakConsumer(AsyncWebsocketConsumer):
                 room_player_channel_name,  # Use player's channel name to send cards to them individually
                 {   'type': 'cards_distributed_to_client',
                     'cards': player_cards,
+                    'players_info':player_data,
                 }
             )
 
@@ -410,12 +453,13 @@ class CallbreakConsumer(AsyncWebsocketConsumer):
 
         players_channels=await sync_to_async(self.get_channel_names_for_room)(self.room_number)
 
-
         print("Internal Card Distribution Started")
         cards = event['cards']
+        players_info=event['players_info']
         # Send the distributed cards to all users in the room
         await self.send(text_data=json.dumps({
-            'distributed_cards_to_client': cards
+            'distributed_cards_to_client': cards,
+            'players_info':players_info,
         }))
         print("Internal Card Distribution Ented")
 
