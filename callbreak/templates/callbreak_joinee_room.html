@@ -16,6 +16,7 @@
         flex-direction: column;
         justify-content: space-between;
         min-height: 100vh;
+        overflow: hidden;
     }
 
     .callbreakHome {
@@ -413,6 +414,7 @@
         align-items: center;
         width: 100%;
         flex-wrap: wrap;
+        position: relative;
     }
 
     .card {
@@ -613,6 +615,36 @@
         background-color: greenyellow;
         margin-left: 10px;
     }
+
+    .locker {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.336);
+        z-index: 100;
+
+    }
+
+
+    .player1_wins {
+        transition: all 1s;
+        transform: translateX(2000px)
+    }
+
+    .player2_wins {
+        transition: all 1s;
+        transform: translateY(-2000px)
+    }
+
+    .player3_wins {
+        transition: all 1s;
+        transform: translateX(-2000px)
+    }
+
+    .player0_wins {
+        transition: all 1s;
+        transform: translateY(2000px)
+    }
 </style>
 {% endblock %}
 
@@ -669,8 +701,7 @@
     players_info = [];
     players_order_list = []
     thrownCards = []
-
-
+    win_count = 0
 
     $('#callbreak-home').show();
     $('#callbreak-game-main').hide();
@@ -731,14 +762,118 @@
             userInfo = data.user;
             showThrownCard(userInfo, cardInfo);
 
+
         } else if (data.action == 'bid_count') {
             var bid_amount = data.bid_count;
             var bidding_user = data.user_info;
             showBidCount(bid_amount, bidding_user)
+        } else if (data.action == 'active_player') {
+            if (data.active_player.channel_name == channel_name) {
+                unlock();
+            }
+            else {
+                lock();
+            }
+            // migrateCardstoWinner()
+        } else if (data.action == 'reset_thrownCards') {
+
+            thrownCards = []
+        } else if (data.action == 'winner_player') {
+            first_time = false
+            let winner_player_index;
+            for (let i = 0; i < players_order_list.length; i++) {
+                if (players_order_list[i].channel_name == data.winner_player) {
+                    winner_player_index = i;
+                    break;
+                }
+            }
+            if (winner_player_index == 0) {
+                win_count += 1;
+                updateWinCount(win_count)
+
+            }
+            migrateThrownCardsToWinner(winner_player_index)
+        } else if (data.action == "update_win_count") {
+            player_channel = data.player;
+            player_win_count = data.win_count;
+            updateWinCount_view(player_channel, player_win_count);
         }
     });
 
 
+    function updateWinCount_view(player_channel, player_win_count) {
+        index = 0;
+        for (let i = 0; i < players_order_list.length; i++) {
+            if (players_order_list[i].channel_name
+                == player_channel) {
+                index = i;
+                break;
+            }
+        }
+
+        if (index == 0) {
+            container = document.getElementById('bid_container_0');
+            container.innerHTML = "Bid: " + player_win_count + " / " + bidding_count;
+        }
+        else {
+            myid = `player${index}_bid`
+            container = document.getElementById(myid)
+            container.innerHTML = "Bid: " + player_win_count + " / " + bidding_count;
+            console.log(container);
+
+        }
+
+    }
+
+
+
+
+    function updateWinCount(win_count) {
+        sendMessage({ action: "update_win_count", win_count: win_count })
+    }
+
+    function migrateThrownCardsToWinner(winner_player_index) {
+
+        cards = document.querySelectorAll('img[class^="thrownCard_player"]');
+
+        setTimeout(() => {
+            cards.forEach((card) => {
+                card.classList.add(`player${winner_player_index}_wins`);
+                // card.classList.remove('thrownCard_player');
+            });
+        }, 500);
+
+    }
+
+
+    function lock() {
+        var cardsHolder = document.getElementById('playing_cards-container_wrapper');
+        // Check if already locked
+        if (!cardsHolder.querySelector('.locker')) {
+            var locker = document.createElement('div');
+            locker.classList.add('locker');
+            cardsHolder.appendChild(locker);
+            console.log('locked');
+        } else {
+            console.log('Already locked');
+        }
+    }
+
+    function unlock() {
+        var cardsHolder = document.getElementById('playing_cards-container_wrapper');
+        var locker = cardsHolder.querySelector('.locker');
+        if (locker) {
+            cardsHolder.removeChild(locker);
+            console.log("unlocked");
+        } else {
+            console.log("Already unlocked");
+        }
+    }
+
+
+    function makeMeActive(player) {
+        sendMessage({ action: "make_me_active", player: player })
+    }
 
     // Connection closed
     socket.addEventListener('close', function (event) {
@@ -768,6 +903,7 @@
                 if (i == 0) {
                     container = document.getElementById("playing_cards-container");
                     bidContainer = document.createElement('div');
+                    bidContainer.id = "bid_container_0"
                     bidContainer.classList.add('bid_container_0');
                     bidContainer.innerHTML = "Bid: " + bid_amount;
                     container.appendChild(bidContainer);
@@ -783,6 +919,8 @@
 
 
     }
+
+
 
     function displayCards(hand, containerWidth) {
         const container = document.getElementById("playing_cards-container_wrapper");
@@ -810,7 +948,9 @@
     function handleClick(event, hand) {
         const cardIndex = event.currentTarget.dataset.index;
         throwCard(hand[cardIndex], channel_name)
-        // Thorw this card hand[cardIndex]
+
+        console.log(thrownCards);
+        makeMeActive(players_order_list[1])
 
         hand.splice(cardIndex, 1);
         displayCards(sortHandBySuit(hand), window.innerWidth);

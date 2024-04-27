@@ -1,193 +1,3 @@
-# from channels.generic.websocket import AsyncWebsocketConsumer
-# import json
-# from asgiref.sync import sync_to_async
-# from django.core.serializers import serialize
-# from django.db.models import F
-
-
-# class CallbreakConsumer(AsyncWebsocketConsumer):
-    
-#     async def connect(self):
-#         self.room_number = self.scope['url_route']['kwargs'].get('room_number')
-#         self.user_name = self.scope['url_route']['kwargs'].get('user_name')
-
-#         # Join room group
-#         await self.channel_layer.group_add(
-#             f'callbreak_rooms_{self.room_number}',
-#             self.channel_name
-#         )
-
-#         # Accept the connection
-#         await self.accept()
-
-#         # Check if the user is already in the room, if not, add them to the room
-#         await self.add_user_to_room_if_not_exist()
-
-#         # Retrieve player information for the room
-#         player_data = await sync_to_async(self.get_players_in_room_data)(self.room_number)
-
-#         # Send player information to the newly connected user
-#         await self.send(text_data=json.dumps({
-#             'connected_users': player_data
-#         }))
-
-#         # Send player information to the group
-#         await self.channel_layer.group_send(
-#             f'callbreak_rooms_{self.room_number}',
-#             {
-#                 'type': 'handle.players.update',  # Consistent message type
-#                 'data': player_data,
-#                 'connected_user': self.user_name,
-#             }
-#         )
-#         print("connected")
-
-#     async def disconnect(self, close_code):
-#             await self.handle_disconnect()
-
-#     async def handle_disconnect(self):
-#         # Remove the player from the room
-#         await sync_to_async(self.remove_player_from_room)(self.room_number, self.user_name)
-
-#         # Leave room group
-#         await self.channel_layer.group_discard(
-#             f'callbreak_rooms_{self.room_number}',
-#             self.channel_name
-#         )
-#          # Retrieve player information for the room
-#         player_data = await sync_to_async(self.get_players_in_room_data)(self.room_number)
-#         # Send message to room group about user leaving
-#         await self.channel_layer.group_send(
-#             f'callbreak_rooms_{self.room_number}',
-#             {
-#                 'type': 'handle.players.update',  # Consistent message type
-#                 'data': player_data,
-#                 'connected_user': self.user_name,
-#             }
-#         )
-
-#     def remove_player_from_room(self, room_number, user_name):
-#         from callbreak.models import RoomPlayer, Room
-#         try:
-#             # Remove the player from the room
-#             RoomPlayer.objects.filter(room__room_number=room_number, player__user__username=user_name).delete()
-#             # Decrement the current players count in the Room model
-#             Room.objects.filter(room_number=room_number).update(current_players=F('current_players') - 1)
-#         except Exception as e:
-#             print(f"Error removing player from room: {e}")
-
-
-
-#     async def user_joined(self, event):
-#         user_name = event['user_name']
-#         message = event['message']
-
-#         # Send message to WebSocket
-#         await self.send(text_data=json.dumps({
-#             'user_joined': user_name,
-#             'message': message
-#         }))
-
-#     async def user_left(self, event):
-#         user_name = event['user_name']
-#         message = event['message']
-
-#         # Send message to WebSocket
-#         await self.send(text_data=json.dumps({
-#             'user_left': user_name,
-#             'message': message
-#         }))
-
-#     async def handle_players_update(self, event):
-#         # Send the player data to all users in the room
-#         await self.send(text_data=json.dumps({
-#             'players_update': event['data']
-#         }))
-
-#     async def receive(self, text_data):
-#         # Parse the received JSON message
-#         text_data_json = json.loads(text_data)
-#         action = text_data_json.get('action')
-
-#         # Check if the action is for changing the page
-#         if action == 'change_page':
-#             # Broadcast the message to the entire group
-#             await self.channel_layer.group_send(
-#                 f'callbreak_rooms_{self.room_number}',
-#                 {
-#                     'type': 'change_page',
-#                 }
-#             )
-#             # Also send the message back to the sender
-#             await self.send(text_data=json.dumps({
-#                 'redirect': 'initiateGame',
-#                 'room_number': self.room_number,
-#             }))
-#         else:
-#             # Handle other actions as needed
-#             pass
-
-#     async def change_page(self, event):
-#         # Redirect the user to another page
-#         await self.send(text_data=json.dumps({
-#             'redirect': 'initiateGame',
-#             'room_number': self.room_number,
-#         }))
-
-
-#     def get_players_in_room_data(self, room_number):
-#         from callbreak.models import RoomPlayer
-#         try:
-#             room_players = RoomPlayer.objects.filter(room__room_number=room_number).select_related('player__user__profile')
-#         except RoomPlayer.DoesNotExist:
-#             print(f"No players found in room {room_number}")
-#             return []
-        
-#         player_data = []
-#         for room_player in room_players:
-#             profile = room_player.player.user.profile
-#             player_data.append({
-#                 'username': room_player.player.user.username,
-#                 'profile_image': profile.profile_picture.url if profile.profile_picture else None,
-#                 'is_online': room_player.player.is_online,
-#             })
-        
-#         return player_data
-    
-#     async def add_user_to_room_if_not_exist(self):
-#     # Check if the user is already in the room
-#         user_in_room = await sync_to_async(self.check_user_in_room)(self.room_number, self.user_name)
-#         if not user_in_room:
-#             # Add the user to the room
-#             await self.add_user_to_room(self.room_number, self.user_name)
-
-#     def check_user_in_room(self, room_number, user_name):
-#         from callbreak.models import RoomPlayer
-#         # Check if the user is already in the room
-#         return RoomPlayer.objects.filter(room__room_number=room_number, player__user__username=user_name).exists()
-
-#     async def add_user_to_room(self, room_number, user_name):
-#         # Add the user to the room
-#         await sync_to_async(self.create_room_player)(room_number, user_name)
-
-#     def create_room_player(self, room_number, user_name):
-#         from callbreak.models import Room, RoomPlayer
-#         from user.models import Player
-#         # Add the user to the room
-#         try:
-#             room = Room.objects.get(room_number=room_number)
-#             player = Player.objects.get(user__username=user_name)
-#             RoomPlayer.objects.create(room=room, player=player)
-#         except Exception as e:
-#             print(f"Error adding user to room: {e}")
-
-
-
-
-
-
-
-
 from channels.generic.websocket import AsyncWebsocketConsumer
 import json
 from asgiref.sync import sync_to_async
@@ -198,7 +8,6 @@ from channels.db import database_sync_to_async
 from channels.layers import get_channel_layer
 
 class CallbreakConsumer(AsyncWebsocketConsumer):
-    
     async def connect(self):
         self.room_number = self.scope['url_route']['kwargs'].get('room_number')
         self.user_name = self.scope['url_route']['kwargs'].get('user_name')
@@ -240,6 +49,8 @@ class CallbreakConsumer(AsyncWebsocketConsumer):
 
     async def disconnect(self, close_code):
             await self.handle_disconnect()
+    
+
 
     async def handle_disconnect(self):
         # Remove the player from the room
@@ -348,9 +159,85 @@ class CallbreakConsumer(AsyncWebsocketConsumer):
                         'user_info': self.channel_name,
                     }
             )
+        elif action == 'players_order_list':
+            self.players_order_list=text_data_json['order_list']
+        elif action == 'make_me_active':
+            player=text_data_json['player']
+            print("make Me active : ",player)
+            await self.channel_layer.group_send(
+                    f'callbreak_rooms_{self.room_number}',
+                    {
+                        'type': 'active_player',
+                        'player': player,
+                    }
+            )
+        elif action=='send_cards_for_evaluation':
+            cards=text_data_json['all_thrown_cards']
+            from callbreak.cardmanager import winner_card_index
+            cardsOnly=[]
+            for card in cards:
+                cardsOnly.append(card['card'])
+            winner=cards[winner_card_index(cardsOnly)]
+            winner_user=winner['user']
+            await self.channel_layer.group_send(
+                    f'callbreak_rooms_{self.room_number}',
+                    {
+                        'type': 'winner_player',
+                        'player': winner_user,
+                    }
+            )
+            await self.channel_layer.group_send(
+                    f'callbreak_rooms_{self.room_number}',
+                    {
+                        'type': 'reset_thrownCards',
+                    }
+            )
+        elif(action=="update_win_count"):
+            win_count=text_data_json['win_count']
+            await self.channel_layer.group_send(
+                    f'callbreak_rooms_{self.room_number}',
+                    {
+                        'type': 'update_win_count',
+                        "win_count":win_count,
+                        'player': self.channel_name,
+                    }
+            )
         else:
             # Handle other actions as needed
             pass
+    
+
+    async def update_win_count(self,event):
+        win_count=event['win_count']
+        player=event['player']
+        await self.send(text_data=json.dumps({
+            'action': 'update_win_count',
+            'win_count': win_count,
+            'player': player,
+        }))
+
+    async def reset_thrownCards(self,event):
+        await self.send(text_data=json.dumps({
+            'action': 'reset_thrownCards',
+        }))
+
+    
+    async def winner_player(self,event):
+        player=event['player']
+        print(player)
+        await self.send(text_data=json.dumps({
+            'action': 'winner_player',
+            'winner_player': player,
+        }))
+
+
+    async def active_player(self,event):
+        player=event['player']
+        await self.send(text_data=json.dumps({
+            'action': 'active_player',
+            'active_player': player,
+        }))
+
 
     async def send_bid_count(self,event):
         bid_count=event['bid_count']

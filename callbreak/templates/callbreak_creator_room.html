@@ -16,6 +16,7 @@
         flex-direction: column;
         justify-content: space-between;
         min-height: 100vh;
+        overflow: hidden;
     }
 
     .callbreakHome {
@@ -408,6 +409,7 @@
         align-items: center;
         width: 100%;
         flex-wrap: wrap;
+        position: relative;
     }
 
     .card {
@@ -589,7 +591,7 @@
 
     .bid_container_0 {
         position: absolute;
-        bottom: 50px;
+        bottom: 110px;
         left: 50px;
 
         padding: 10px 10px;
@@ -608,6 +610,35 @@
         color: rgb(67, 67, 67);
         background-color: greenyellow;
         margin-left: 10px;
+    }
+
+    .locker {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.336);
+        z-index: 100;
+
+    }
+
+    .player1_wins {
+        transition: all 1s;
+        transform: translateX(2000px)
+    }
+
+    .player2_wins {
+        transition: all 1s;
+        transform: translateY(-2000px)
+    }
+
+    .player3_wins {
+        transition: all 1s;
+        transform: translateX(-2000px)
+    }
+
+    .player0_wins {
+        transition: all 1s;
+        transform: translateY(2000px)
     }
 </style>
 {% endblock %}
@@ -676,6 +707,8 @@
     players_info = []
     players_order_list = []
     thrownCards = []
+    first_time = true;
+    win_count = 0;
 
     $(document).ready(function () {
         $("#callbreak-game-main").hide();
@@ -814,7 +847,6 @@
     socket.addEventListener('message', function (event) {
         // Parse the received JSON data
         var data = JSON.parse(event.data);
-        // console.log(event);
 
         // Handle different types of messages
         if (data.connected_users || data.players_update) {
@@ -843,22 +875,159 @@
             // showCards(distributedCards);
             displayCards(sortHandBySuit(distributedCards), window.innerWidth);
             showPlayerInGame(players_info)
-            // Process the received cards as needed
+            sendOrderListToServer(players_order_list)
+            if (first_time) {
+                makeMeActive(players_order_list[0])
+            }
         } else if (data.channel_name) {
             channel_name = data.channel_name
             console.log(channel_name)
         } else if (data.action === 'card_thrown') {
+
             var cardInfo = data.card;
-            thrownCards.push(cardInfo);
             userInfo = data.user;
+            thrownCardInfo = { "card": cardInfo, "user": userInfo }
+            thrownCards.push(thrownCardInfo);
             showThrownCard(userInfo, cardInfo);
+
+            if (thrownCards.length == 4) {
+                sendThrownCardsToServer(thrownCards);
+            }
+
 
         } else if (data.action == 'bid_count') {
             var bid_amount = data.bid_count;
             var bidding_user = data.user_info;
             showBidCount(bid_amount, bidding_user)
+
+        } else if (data.action == 'active_player') {
+            if (data.active_player.channel_name == channel_name) {
+                unlock();
+            }
+            else {
+                lock();
+            }
+        } else if (data.action == 'winner_player') {
+            first_time = false
+            let winner_player
+            let win_index;
+            for (let i = 0; i < players_order_list.length; i++) {
+                if (players_order_list[i].channel_name == data.winner_player) {
+                    win_index = i
+                    winner_player = players_order_list[i]
+                    break;
+                }
+            }
+            if (win_index == 0) {
+                win_count += 1;
+                updateWinCount(win_count);
+            }
+            migrateThrownCardsToWinner(data.winner_player)
+            makeMeActive(winner_player)
+
+        } else if (data.action == 'reset_thrownCards') {
+
+            thrownCards = []
+        } else if (data.action == "update_win_count") {
+            player_channel = data.player;
+            player_win_count = data.win_count;
+            updateWinCount_view(player_channel, player_win_count);
         }
     });
+
+    function send_final_scores(bid_count, win_count) {
+        sendMessage({
+            action: "send_final_scores",
+            bid_count: bid_count,
+            win_count: win_count
+        })
+    }
+
+
+
+    function updateWinCount_view(player_channel, player_win_count) {
+        index = 0;
+        for (let i = 0; i < players_order_list.length; i++) {
+            if (players_order_list[i].channel_name
+                == player_channel) {
+                index = i;
+                break;
+            }
+        }
+
+        if (index == 0) {
+            container = document.getElementById('bid_container_0');
+            container.innerHTML = "Bid: " + player_win_count + " / " + bidding_count;
+        }
+        else {
+            myid = `player${index}_bid`
+            container = document.getElementById(myid)
+            container.innerHTML = "Bid: " + player_win_count + " / " + bidding_count;
+            console.log(container);
+
+        }
+
+    }
+
+
+
+    function updateWinCount(win_count) {
+        sendMessage({ action: "update_win_count", win_count: win_count })
+    }
+
+    function migrateThrownCardsToWinner(winner_player) {
+        index = 0;
+        for (let i = 0; i < players_order_list.length; i++) {
+            if (players_order_list[i].channel_name == winner_player) {
+                index = i;
+                break;
+            }
+        }
+
+        cards = document.querySelectorAll('img[class^="thrownCard_player"]');
+
+        setTimeout(() => {
+            cards.forEach((card) => {
+                card.classList.add(`player${index}_wins`);
+                // card.classList.remove('thrownCard_player');
+            });
+        }, 500);
+
+    }
+
+    function sendThrownCardsToServer(thrownCards) {
+        sendMessage({ action: "send_cards_for_evaluation", all_thrown_cards: thrownCards })
+    }
+
+    function lock() {
+        var cardsHolder = document.getElementById('playing_cards-container_wrapper');
+        // Check if already locked
+        if (!cardsHolder.querySelector('.locker')) {
+            var locker = document.createElement('div');
+            locker.classList.add('locker');
+            cardsHolder.appendChild(locker);
+            console.log('locked');
+        } else {
+            console.log('Already locked');
+        }
+    }
+
+    function unlock(player) {
+        var cardsHolder = document.getElementById('playing_cards-container_wrapper');
+        var locker = cardsHolder.querySelector('.locker');
+        if (locker) {
+            cardsHolder.removeChild(locker);
+        } else {
+            console.log("Already unlocked");
+        }
+    }
+
+    function makeMeActive(player) {
+        sendMessage({ action: "make_me_active", player: player })
+    }
+    function sendOrderListToServer(list) {
+        sendMessage({ action: "players_order_list", order_list: list })
+    }
 
     function showThrownCard(userInfo, card) {
         const img = document.createElement("img");
@@ -885,6 +1054,7 @@
                 if (i == 0) {
                     container = document.getElementById("playing_cards-container");
                     bidContainer = document.createElement('div');
+                    bidContainer.id = "bid_container_0";
                     bidContainer.classList.add('bid_container_0');
                     bidContainer.innerHTML = "Bid: " + bid_amount;
                     container.appendChild(bidContainer);
@@ -899,6 +1069,7 @@
 
 
     }
+
 
 
     // Function to update player list
@@ -974,7 +1145,7 @@
     }
 
 
-    function throwCard(cardinfo, userinfo) {
+    function throwCard(cardinfo) {
         sendMessage({ action: "card_thrown", card: cardinfo })
     }
 
@@ -1012,8 +1183,10 @@
 
     function handleClick(event, hand) {
         const cardIndex = event.currentTarget.dataset.index;
-        throwCard(hand[cardIndex], channel_name)
-        // Thorw this card hand[cardIndex]
+        throwCard(hand[cardIndex])
+        makeMeActive(players_order_list[1])
+
+
 
         hand.splice(cardIndex, 1);
         displayCards(sortHandBySuit(hand), window.innerWidth);
@@ -1069,32 +1242,6 @@
 
         }
     }
-
-
-
-
-
-
-
-
-
-
-    function closeCustomAlert() {
-        var number = document.getElementById("numberInput").value;
-        if (number !== "") {
-            console.log("You entered: " + number);
-            if (!(number > 13 || number <= 0)) {
-                var customAlert = document.getElementById("customAlert");
-                customAlert.parentNode.removeChild(customAlert);
-                bidding_count = number;
-                sendBidCountToServer(number);
-            } else {
-                alert("Please enter a valid number between 1 and 13");
-            }
-
-        }
-    }
-
 
 
 

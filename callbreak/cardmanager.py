@@ -30,3 +30,79 @@ def shuffle_deck(deck):
     return shuffled_deck
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+def are_same_suit(cards):
+    initial_suit=cards[0]['suit']
+    for card in cards:
+        if(card['suit']!=initial_suit):
+            return False
+    return True
+
+
+def big_from_same_cards(cards):
+    index=0
+    bigValue=cards[0]['value']
+    for i in range(len(cards)):
+        if(cards[i]['value']<bigValue):
+            index=i
+            bigValue=cards[i]['value']
+    return cards[index]
+
+def spades_count(cards):
+    spades_count = 0
+    for card in cards:
+        if card['suit'] == 'spades':
+            spades_count += 1
+    return spades_count
+
+def get_cards_of_suit(cards,suit):
+    mycards=[]
+    for card in cards:
+        if(card['suit']==suit):
+            mycards.append(card)
+    return mycards
+
+
+def get_index_of_card(cards,mycard):
+    for i in range(len(cards)):
+        if cards[i]==mycard:
+            return i
+            break
+    
+
+
+def winner_card_index(cards):
+    if(spades_count(cards)>=1):
+        return get_index_of_card(cards,big_from_same_cards(get_cards_of_suit(cards,"spades")))
+        
+    else:
+        return get_index_of_card(cards,big_from_same_cards(get_cards_of_suit(cards,cards[0]['suit'])))
+        
+
+
+
+
+
+
+
+
+
+
+
+
+
